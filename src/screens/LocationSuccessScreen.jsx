@@ -3,11 +3,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button.jsx';
 import { colors } from '../theme/colors.jsx';
-import { mockSavedLocation } from '../mocks/shopMockData.js';
 
 // Ubicación guardada exitosamente
-// mini vista de la dirección guardada 
-export default function LocationSuccessScreen({ navigation }) {
+// mini vista de la dirección guardada
+export default function LocationSuccessScreen({ navigation, route }) {
+  const savedLocation = route?.params?.location;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.content}>
@@ -27,8 +28,8 @@ export default function LocationSuccessScreen({ navigation }) {
           <View style={styles.mapInfo}>
             <Ionicons name="home" size={14} color={colors.primary} />
             <View style={styles.mapTextWrapper}>
-              <Text style={styles.mapLabel}>{mockSavedLocation.label}</Text>
-              <Text style={styles.mapPlace}>{mockSavedLocation.place}</Text>
+              <Text style={styles.mapLabel}>{savedLocation?.label ?? 'Dirección guardada'}</Text>
+              <Text style={styles.mapPlace}>{savedLocation?.place ?? 'Sin detalles disponibles'}</Text>
             </View>
           </View>
         </View>

@@ -3,14 +3,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar.jsx';
 import { colors } from '../theme/colors.jsx';
-import { mockCategories, mockPopularProducts } from '../mocks/shopMockData.js';
-
-// Inicio con datos locales.
+import { useAuth } from '../context/AuthContext.jsx';
 
 // Esta es la pantalla que aparece después del login.
 // Desde Home se puede entrar a ver todos o tocar el banner
 // y seguir el proceso de ubicación.
 export default function HomeScreen({ navigation }) {
+  const { user } = useAuth();
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
@@ -28,7 +28,9 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <>
-            <Text style={styles.welcome}>Bienvenido a Macetas</Text>
+            <Text style={styles.welcome}>
+              {user?.name ? `Bienvenido, ${user.name}` : 'Bienvenido a Macetas'}
+            </Text>
 
             <View style={styles.banner}>
               <View style={styles.badgeNew}>
@@ -41,14 +43,6 @@ export default function HomeScreen({ navigation }) {
               />
             </View>
 
-            <View style={styles.categoryRow}>
-              {mockCategories.map((cat) => (
-                <View key={cat} style={styles.categoryPill}>
-                  <Text style={styles.categoryText}>{cat}</Text>
-                </View>
-              ))}
-            </View>
-
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Populares</Text>
               <TouchableOpacity onPress={() => navigation.navigate('EnterLocation')}>
@@ -57,10 +51,11 @@ export default function HomeScreen({ navigation }) {
             </View>
           </>
         }
-        data={mockPopularProducts}
+        data={[]}
         keyExtractor={(item) => item.id}
         numColumns={2}
         columnWrapperStyle={styles.row}
+        ListEmptyComponent={<Text style={styles.emptyText}>Aún no hay productos disponibles.</Text>}
         renderItem={({ item }) => (
           <View style={styles.productCard}>
             <View style={styles.productImagePlaceholder}>
@@ -122,19 +117,11 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   badgeNewText: { color: colors.white, fontSize: 10, fontWeight: '600' },
-  categoryRow: { flexDirection: 'row', marginBottom: 20 },
-  categoryPill: {
-    backgroundColor: colors.maroon,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginRight: 8,
-  },
-  categoryText: { color: colors.white, fontSize: 11, fontWeight: '600' },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
   seeAll: { fontSize: 12, color: colors.maroon, fontWeight: '600', textDecorationLine: 'underline' },
   row: { justifyContent: 'space-between' },
+  emptyText: { fontSize: 12, color: colors.placeholder, textAlign: 'center', marginTop: 12 },
   productCard: { width: '48%', backgroundColor: colors.card, borderRadius: 14, padding: 10, marginBottom: 14 },
   productImagePlaceholder: {
     width: '100%',

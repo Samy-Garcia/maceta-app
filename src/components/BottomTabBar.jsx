@@ -6,7 +6,7 @@ import { colors } from '../theme/colors.jsx';
 const ITEMS = [
   { key: 'Home', label: 'Home', icon: 'home', route: 'Home' },
   { key: 'Productos', label: 'Productos', icon: 'leaf', route: 'Products' },
-  { key: 'Carrito', label: 'Carrito', icon: 'cart', route: 'Cart', badge: 2 },
+  { key: 'Carrito', label: 'Carrito', icon: 'cart', route: 'Cart' },
   { key: 'Pedidos', label: 'Pedidos', icon: 'receipt', route: 'Orders' },
   { key: 'Perfil', label: 'Perfil', icon: 'person', route: 'Profile' },
 ];

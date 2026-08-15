@@ -4,12 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar.jsx';
 import { colors } from '../theme/colors.jsx';
-import { mockWishlistResults } from '../mocks/shopMockData.js';
 
 // lista de deseos
 export default function WishlistScreen() {
   const [tab, setTab] = useState('concrete'); // 'concrete' | 'wishlist'
-  const [query, setQuery] = useState('Moon');
+  const [query, setQuery] = useState('');
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -19,6 +18,7 @@ export default function WishlistScreen() {
           <TextInput
             value={query}
             onChangeText={setQuery}
+            placeholder="Buscar..."
             style={styles.searchInput}
             placeholderTextColor="rgba(255,255,255,0.7)"
           />
@@ -35,14 +35,15 @@ export default function WishlistScreen() {
         </View>
       </View>
 
-      <Text style={styles.resultsTitle}>Resultados de "{query}"</Text>
+      {query ? <Text style={styles.resultsTitle}>Resultados de "{query}"</Text> : null}
 
       <FlatList
         contentContainerStyle={styles.list}
-        data={mockWishlistResults}
+        data={[]}
         keyExtractor={(item) => item.id}
         numColumns={2}
         columnWrapperStyle={styles.row}
+        ListEmptyComponent={<Text style={styles.emptyText}>Tu lista de deseos está vacía.</Text>}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.imagePlaceholder}>
@@ -85,6 +86,7 @@ const styles = StyleSheet.create({
   resultsTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginTop: 16, marginHorizontal: 20 },
   list: { padding: 20 },
   row: { justifyContent: 'space-between' },
+  emptyText: { fontSize: 12, color: colors.placeholder, textAlign: 'center', marginTop: 24 },
   card: { width: '48%', backgroundColor: colors.card, borderRadius: 14, padding: 10, marginBottom: 14 },
   imagePlaceholder: {
     width: '100%', height: 100, borderRadius: 10, backgroundColor: colors.border, marginBottom: 8,

@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button.jsx';
 import { colors } from '../theme/colors.jsx';
-import { mockAddresses } from '../mocks/shopMockData.js';
 
 //Ubicaciones Actuales y direcciones guardadas
 
@@ -17,8 +16,9 @@ export default function AddressListScreen({ navigation }) {
 
       <FlatList
         contentContainerStyle={styles.list}
-        data={mockAddresses}
+        data={[]}
         keyExtractor={(item) => item.id}
+        ListEmptyComponent={<Text style={styles.emptyText}>No tienes direcciones guardadas todavía.</Text>}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -87,6 +87,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { color: colors.white, fontSize: 17, fontWeight: '700' },
   list: { padding: 20 },
+  emptyText: { fontSize: 12, color: colors.placeholder, textAlign: 'center', marginBottom: 14 },
   card: { backgroundColor: colors.white, borderRadius: 14, padding: 16, marginBottom: 14 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   cardLabel: { fontSize: 15, fontWeight: '700', color: colors.text },

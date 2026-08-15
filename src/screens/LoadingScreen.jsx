@@ -2,14 +2,19 @@ import { useEffect } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors.jsx';
 import { useSplashLoader } from '../hooks/useSplashLoader.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
-// Pantalla de carga  
+// Pantalla de carga: además del tiempo mínimo, espera a saber si ya hay
+// una sesión activa (cookie de login vigente) para saltar directo a Home
 export default function LoadingScreen({ navigation }) {
   const { isReady } = useSplashLoader(1500);
+  const { authLoading, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (isReady) navigation.replace('Login');
-  }, [isReady, navigation]);
+    if (isReady && !authLoading) {
+      navigation.replace(isAuthenticated ? 'Home' : 'Login');
+    }
+  }, [isReady, authLoading, isAuthenticated, navigation]);
 
   return (
     <View style={styles.container}>
