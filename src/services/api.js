@@ -31,7 +31,8 @@ export async function apiFetch(path, options = {}) {
   const body = isJson ? await response.json().catch(() => null) : null;
 
   if (!response.ok) {
-    throw new ApiError(body?.message || 'Ocurrió un error inesperado.', response.status);
+    // La mayoría de endpoints devuelven { message }, pero /api/route (OSRM) usa { error }
+    throw new ApiError(body?.message || body?.error || 'Ocurrió un error inesperado.', response.status);
   }
 
   return body;

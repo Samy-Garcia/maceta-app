@@ -12,6 +12,10 @@ export function CartProvider({ children }) {
   const { isAuthenticated } = useAuth();
   const [cart, setCart] = useState(emptyCart);
   const [loading, setLoading] = useState(false);
+  // Envío elegido en el mapa para ESTE pedido (no se guarda en el backend:
+  // el modelo de Address no tiene coordenadas, así que se calcula al vuelo
+  // igual que en la tienda web y se limpia después de pagar).
+  const [shippingInfo, setShippingInfo] = useState(null);
 
   const refreshCart = useCallback(async () => {
     setLoading(true);
@@ -61,6 +65,7 @@ export function CartProvider({ children }) {
         body: JSON.stringify({ shippingAddress, contactPhone, couponCode: couponCode || undefined }),
       });
       await refreshCart(); // el carrito activo confirmado pasa a "Pendiente"; esto trae uno nuevo vacío
+      setShippingInfo(null);
       return confirmed;
     },
     [refreshCart]
@@ -70,7 +75,10 @@ export function CartProvider({ children }) {
 
   return (
     <CartContext.Provider
-      value={{ cart, itemCount, loading, refreshCart, addToCart, updateQuantity, removeItem, checkout }}
+      value={{
+        cart, itemCount, loading, refreshCart, addToCart, updateQuantity, removeItem, checkout,
+        shippingInfo, setShippingInfo,
+      }}
     >
       {children}
     </CartContext.Provider>

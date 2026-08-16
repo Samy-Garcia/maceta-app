@@ -6,16 +6,15 @@ import { useAuth } from '../context/AuthContext.jsx';
 
 const TYPE_LABELS = { maceta: 'Maceta', vela: 'Vela', planta: 'Planta' };
 
-// Pantalla del carrito: cantidades, eliminar, cupón real (de tus canjes de
-// lealtad) y checkout. El envío es siempre gratis en este backend (no hay
-// ningún campo de costo de envío en el modelo de Cart), así que no se
-// inventa un monto — se muestra tal como es.
+// Pantalla del carrito: cantidades, eliminar, envío real (calculado en el
+// mapa de OpenStreetMap), cupón real (de tus canjes de lealtad) y checkout.
 export function useCartScreen(navigation) {
-  const { cart, loading, updateQuantity, removeItem, checkout } = useCart();
+  const { cart, loading, updateQuantity, removeItem, checkout, shippingInfo, setShippingInfo } = useCart();
   const { user } = useAuth();
 
   const [couponCode, setCouponCode] = useState('');
   const [redemptions, setRedemptions] = useState([]);
+  const [contactPhone, setContactPhone] = useState(user?.phone ?? '');
   const [checkingOut, setCheckingOut] = useState(false);
   const [error, setError] = useState('');
   const [busyItemId, setBusyItemId] = useState(null);
@@ -38,9 +37,8 @@ export function useCartScreen(navigation) {
     matchedRedemption?.type === 'coupon'
       ? Number(((subtotal * matchedRedemption.discountPercent) / 100).toFixed(2))
       : 0;
-  const total = Number((subtotal - discount).toFixed(2));
-
-  const defaultAddress = user?.addresses?.find((a) => a.isDefault) || user?.addresses?.[0] || null;
+  const shippingCost = matchedRedemption?.type === 'shipping' ? 0 : shippingInfo?.shippingCost || 0;
+  const total = Number((subtotal - discount + shippingCost).toFixed(2));
 
   const itemLabel = (item) => item.product?.dimensions || item.product?.size || TYPE_LABELS[item.productType];
 
@@ -76,16 +74,22 @@ export function useCartScreen(navigation) {
     ]);
   };
 
+  const goToShippingMap = () => navigation.navigate('MapLocation', { returnTo: 'Cart' });
+
   const handleCheckout = async () => {
     if (!items.length) {
       Alert.alert('Carrito vacío', 'Agrega productos antes de pagar.');
       return;
     }
-    if (!defaultAddress) {
-      Alert.alert('Falta dirección', 'Agrega una dirección de envío antes de continuar.', [
+    if (!shippingInfo) {
+      Alert.alert('Falta la ubicación de envío', 'Marca tu dirección en el mapa antes de continuar.', [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Agregar dirección', onPress: () => navigation.navigate('EnterLocation') },
+        { text: 'Elegir en el mapa', onPress: goToShippingMap },
       ]);
+      return;
+    }
+    if (!contactPhone.trim()) {
+      setError('Ingresa un teléfono de contacto.');
       return;
     }
 
@@ -93,11 +97,12 @@ export function useCartScreen(navigation) {
     setCheckingOut(true);
     try {
       const confirmed = await checkout(
-        defaultAddress.addressLine,
-        defaultAddress.phone || user?.phone,
+        shippingInfo.address,
+        contactPhone.trim(),
         matchedRedemption ? couponCode.trim() : undefined
       );
-      navigation.navigate('OrderConfirmed', { order: confirmed });
+      setShippingInfo(null);
+      navigation.navigate('OrderConfirmed', { order: { ...confirmed, total } });
     } catch (err) {
       setError(err.message || 'No se pudo confirmar tu pedido.');
     } finally {
@@ -110,15 +115,19 @@ export function useCartScreen(navigation) {
     loading,
     subtotal,
     discount,
+    shippingCost,
+    shippingInfo,
     total,
     couponCode,
     setCouponCode,
     matchedRedemption,
-    defaultAddress,
+    contactPhone,
+    setContactPhone,
     itemLabel,
     changeQuantity,
     handleRemove,
     handleCheckout,
+    goToShippingMap,
     checkingOut,
     error,
     busyItemId,

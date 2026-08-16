@@ -38,7 +38,7 @@ export default function EnterLocationScreen({ navigation }) {
         <Button label="Ver mis Ubicaciones" onPress={() => navigation.navigate('AddressList')} />
         <TouchableOpacity
           style={styles.secondaryButton}
-          onPress={() => navigation.navigate('MapLocation')}
+          onPress={() => navigation.navigate('MapLocation', { returnTo: 'LocationSuccess' })}
         >
           <Text style={styles.secondaryButtonText}>Ubicar en el mapa</Text>
         </TouchableOpacity>

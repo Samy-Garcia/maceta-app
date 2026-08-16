@@ -11,8 +11,10 @@ export default function CartScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const {
-    items, loading, subtotal, discount, total, couponCode, setCouponCode, matchedRedemption,
-    defaultAddress, itemLabel, changeQuantity, handleRemove, handleCheckout, checkingOut, error, busyItemId,
+    items, loading, subtotal, discount, shippingCost, shippingInfo, total,
+    couponCode, setCouponCode, matchedRedemption, contactPhone, setContactPhone,
+    itemLabel, changeQuantity, handleRemove, handleCheckout, goToShippingMap,
+    checkingOut, error, busyItemId,
   } = useCartScreen(navigation);
 
   return (
@@ -83,29 +85,35 @@ export default function CartScreen({ navigation }) {
           <Text style={styles.sectionTitle}>ENVÍO</Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.addressCard}
-          onPress={() => navigation.navigate('AddressList')}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity style={styles.addressCard} onPress={goToShippingMap} activeOpacity={0.8}>
           <View style={styles.addressIcon}>
             <Ionicons name="location" size={18} color={colors.primary} />
           </View>
           <View style={styles.addressInfo}>
-            {defaultAddress ? (
+            {shippingInfo ? (
               <>
-                <Text style={styles.addressTitle}>
-                  {defaultAddress.municipality}, {defaultAddress.department}
+                <Text style={styles.addressTitle} numberOfLines={2}>{shippingInfo.address}</Text>
+                <Text style={styles.addressMeta}>
+                  {(shippingInfo.distanceMeters / 1000).toFixed(2)} km ·{' '}
+                  {Math.round(shippingInfo.durationSeconds / 60)} min · Envío: $ {shippingInfo.shippingCost.toFixed(2)}
                 </Text>
-                <Text style={styles.addressDetail}>{defaultAddress.addressLine}</Text>
-                <Text style={styles.addressMeta}>Entrega estimada: 2-3 días · Envío gratis</Text>
               </>
             ) : (
-              <Text style={styles.addressTitle}>Agrega una dirección de envío</Text>
+              <Text style={styles.addressTitle}>Marca tu ubicación en el mapa (OpenStreetMap)</Text>
             )}
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.placeholder} />
         </TouchableOpacity>
+
+        <Text style={styles.label}>Teléfono de contacto</Text>
+        <TextInput
+          style={styles.couponInput}
+          value={contactPhone}
+          onChangeText={setContactPhone}
+          placeholder="Ej. 503-7777-8888"
+          placeholderTextColor={colors.placeholder}
+          keyboardType="phone-pad"
+        />
 
         <View style={styles.sectionHeader}>
           <Ionicons name="pricetag-outline" size={16} color={colors.text} />
@@ -144,7 +152,9 @@ export default function CartScreen({ navigation }) {
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Envío</Text>
-            <Text style={styles.summaryValue}>Gratis</Text>
+            <Text style={styles.summaryValue}>
+              {shippingInfo ? (shippingCost > 0 ? `$ ${shippingCost.toFixed(2)}` : 'Gratis') : 'Marca tu ubicación'}
+            </Text>
           </View>
           {discount > 0 ? (
             <View style={styles.summaryRow}>
@@ -244,6 +254,7 @@ const createStyles = (colors) =>
     addressTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
     addressDetail: { fontSize: 12, color: colors.placeholder, marginTop: 2 },
     addressMeta: { fontSize: 11, color: colors.placeholder, marginTop: 4 },
+    label: { fontSize: 12, color: colors.placeholder, marginTop: 14, marginBottom: 6 },
     couponRow: { flexDirection: 'row' },
     couponInput: {
       flex: 1, height: 46, borderRadius: 12, paddingHorizontal: 14,

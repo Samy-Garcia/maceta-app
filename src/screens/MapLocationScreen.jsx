@@ -1,19 +1,45 @@
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button.jsx';
+import OsmMapPicker, { drawRouteScript, panToScript } from '../components/OsmMapPicker.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
+import { useShippingMap } from '../hooks/useShippingMap.jsx';
 
-// direccion de envio
-export default function MapLocationScreen({ navigation }) {
+// Elegir dirección de envío en un mapa real de OpenStreetMap: calcula la
+// distancia real hasta la tienda (OSRM) y el costo de envío con el
+// pricePerKm configurado, igual que en la tienda web.
+export default function MapLocationScreen({ navigation, route: navRoute }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const mapRef = useRef(null);
+  const {
+    store, address, route, shippingCost, loading, error,
+    query, setQuery, searching, handleSearch, selectLocation, confirm, canConfirm,
+  } = useShippingMap(navigation, navRoute?.params?.returnTo);
+
+  useEffect(() => {
+    if (route?.geometria) {
+      mapRef.current?.injectJavaScript(drawRouteScript(route.geometria));
+    }
+  }, [route]);
+
+  const onSearchSubmit = async () => {
+    const result = await handleSearch();
+    if (result) {
+      mapRef.current?.injectJavaScript(panToScript(result.lat, result.lng));
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={22} color={colors.white} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Dirección de envío</Text>
-        <Ionicons name="menu" size={22} color={colors.white} />
+        <View style={{ width: 22 }} />
       </View>
 
       <View style={styles.searchWrapper}>
@@ -23,20 +49,37 @@ export default function MapLocationScreen({ navigation }) {
             placeholder="Buscar en el mapa"
             placeholderTextColor={colors.placeholder}
             style={styles.searchInput}
+            value={query}
+            onChangeText={setQuery}
+            onSubmitEditing={onSearchSubmit}
+            returnKeyType="search"
           />
+          {searching ? <ActivityIndicator size="small" color={colors.primary} /> : null}
         </View>
       </View>
 
       <View style={styles.mapWrapper}>
-        <Ionicons name="map" size={40} color={colors.border} />
-        <Text style={styles.mapHint}>Vista previa del mapa</Text>
+        <OsmMapPicker ref={mapRef} storeLat={store.lat} storeLng={store.lng} onSelect={selectLocation} />
+      </View>
+
+      <View style={styles.infoPanel}>
+        <Text style={styles.hint}>Toca el mapa para marcar tu dirección de entrega</Text>
+
+        {loading ? <Text style={styles.loadingText}>Calculando ruta...</Text> : null}
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+        {address ? <Text style={styles.address} numberOfLines={2}>{address}</Text> : null}
+
+        {route ? (
+          <Text style={styles.routeInfo}>
+            Distancia: {(route.distanciaMetros / 1000).toFixed(2)} km · Tiempo: {Math.round(route.duracionSegundos / 60)} min
+            · Envío: $ {shippingCost.toFixed(2)}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.footer}>
-        <Button
-          label="Confirmar ubicación"
-          onPress={() => navigation.navigate('LocationSuccess')}
-        />
+        <Button label="Confirmar ubicación" onPress={confirm} disabled={!canConfirm} />
       </View>
     </SafeAreaView>
   );
@@ -72,12 +115,15 @@ const createStyles = (colors) =>
       flex: 1,
       marginTop: 12,
       marginHorizontal: 20,
-      marginBottom: 12,
       borderRadius: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
+      overflow: 'hidden',
       backgroundColor: colors.card,
     },
-    mapHint: { fontSize: 12, color: colors.placeholder, marginTop: 8 },
-    footer: { paddingHorizontal: 20, paddingBottom: 24 },
+    infoPanel: { paddingHorizontal: 20, paddingTop: 10 },
+    hint: { fontSize: 11, color: colors.placeholder },
+    loadingText: { fontSize: 12, color: colors.primary, marginTop: 4 },
+    errorText: { fontSize: 12, color: colors.maroonDark, marginTop: 4 },
+    address: { fontSize: 13, color: colors.text, fontWeight: '600', marginTop: 6 },
+    routeInfo: { fontSize: 12, color: colors.placeholder, marginTop: 4 },
+    footer: { paddingHorizontal: 20, paddingVertical: 16 },
   });
