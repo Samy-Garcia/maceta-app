@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
 
@@ -19,9 +20,10 @@ export default function BottomTabBar({ active = 'Home' }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const { itemCount } = useCart();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, { paddingBottom: insets.bottom + 10 }]}>
       {ITEMS.map((item) => {
         const isActive = item.key === active;
         const badge = item.key === 'Carrito' && itemCount > 0 ? itemCount : null;
@@ -60,7 +62,6 @@ const createStyles = (colors) =>
       borderTopColor: colors.border,
       backgroundColor: colors.surface,
       paddingTop: 8,
-      paddingBottom: 10,
     },
     item: { flex: 1, alignItems: 'center' },
     label: { fontSize: 10, color: colors.placeholder, marginTop: 2 },

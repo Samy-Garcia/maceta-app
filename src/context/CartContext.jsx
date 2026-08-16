@@ -4,19 +4,24 @@ import { useAuth } from './AuthContext.jsx';
 
 const CartContext = createContext(null);
 
-// Carrito del cliente (GET /api/cart/mine). itemCount es la suma de las
+const emptyCart = { products: [], total: 0 };
+
+// Carrito real del cliente (GET /api/cart/mine). itemCount es la suma de las
 // cantidades de todos los productos, para el badge de la barra inferior.
 export function CartProvider({ children }) {
   const { isAuthenticated } = useAuth();
-  const [itemCount, setItemCount] = useState(0);
+  const [cart, setCart] = useState(emptyCart);
+  const [loading, setLoading] = useState(false);
 
   const refreshCart = useCallback(async () => {
+    setLoading(true);
     try {
-      const cart = await apiFetch('/api/cart/mine');
-      const total = (cart?.products || []).reduce((sum, item) => sum + (item.quantity || 0), 0);
-      setItemCount(total);
+      const data = await apiFetch('/api/cart/mine');
+      setCart(data || emptyCart);
     } catch {
-      setItemCount(0);
+      setCart(emptyCart);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -24,23 +29,49 @@ export function CartProvider({ children }) {
     if (isAuthenticated) {
       refreshCart();
     } else {
-      setItemCount(0);
+      setCart(emptyCart);
     }
   }, [isAuthenticated, refreshCart]);
 
-  const addToCart = useCallback(
-    async (productId, productType, quantity = 1) => {
-      await apiFetch('/api/cart/add', {
+  const addToCart = useCallback(async (productId, productType, quantity = 1) => {
+    const data = await apiFetch('/api/cart/add', {
+      method: 'POST',
+      body: JSON.stringify({ productId, productType, quantity }),
+    });
+    setCart(data);
+  }, []);
+
+  const updateQuantity = useCallback(async (itemId, quantity) => {
+    const data = await apiFetch(`/api/cart/item/${itemId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ quantity }),
+    });
+    setCart(data);
+  }, []);
+
+  const removeItem = useCallback(async (itemId) => {
+    const data = await apiFetch(`/api/cart/item/${itemId}`, { method: 'DELETE' });
+    setCart(data);
+  }, []);
+
+  const checkout = useCallback(
+    async (shippingAddress, contactPhone, couponCode) => {
+      const confirmed = await apiFetch('/api/cart/checkout', {
         method: 'POST',
-        body: JSON.stringify({ productId, productType, quantity }),
+        body: JSON.stringify({ shippingAddress, contactPhone, couponCode: couponCode || undefined }),
       });
-      await refreshCart();
+      await refreshCart(); // el carrito activo confirmado pasa a "Pendiente"; esto trae uno nuevo vacío
+      return confirmed;
     },
     [refreshCart]
   );
 
+  const itemCount = (cart?.products || []).reduce((sum, item) => sum + (item.quantity || 0), 0);
+
   return (
-    <CartContext.Provider value={{ itemCount, refreshCart, addToCart }}>
+    <CartContext.Provider
+      value={{ cart, itemCount, loading, refreshCart, addToCart, updateQuantity, removeItem, checkout }}
+    >
       {children}
     </CartContext.Provider>
   );
