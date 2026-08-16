@@ -2,10 +2,13 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button.jsx';
-import { colors } from '../theme/colors.jsx';
+import { useTheme } from '../theme/ThemeContext.jsx';
 
-// direccion de envio 
+// direccion de envio
 export default function MapLocationScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
@@ -39,41 +42,42 @@ export default function MapLocationScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.shopBg },
-  header: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTitle: { color: colors.white, fontSize: 17, fontWeight: '700' },
-  searchWrapper: { paddingHorizontal: 20, marginTop: -18, zIndex: 2 },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    height: 44,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  searchInput: { marginLeft: 8, flex: 1, fontSize: 13, color: colors.text },
-  mapWrapper: {
-    flex: 1,
-    marginTop: 12,
-    marginHorizontal: 20,
-    marginBottom: 12,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-  },
-  mapHint: { fontSize: 12, color: colors.placeholder, marginTop: 8 },
-  footer: { paddingHorizontal: 20, paddingBottom: 24 },
-});
+const createStyles = (colors) =>
+  StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: colors.shopBg },
+    header: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: 20,
+      paddingVertical: 18,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    headerTitle: { color: colors.white, fontSize: 17, fontWeight: '700' },
+    searchWrapper: { paddingHorizontal: 20, marginTop: -18, zIndex: 2 },
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      height: 44,
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    },
+    searchInput: { marginLeft: 8, flex: 1, fontSize: 13, color: colors.text },
+    mapWrapper: {
+      flex: 1,
+      marginTop: 12,
+      marginHorizontal: 20,
+      marginBottom: 12,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.card,
+    },
+    mapHint: { fontSize: 12, color: colors.placeholder, marginTop: 8 },
+    footer: { paddingHorizontal: 20, paddingBottom: 24 },
+  });

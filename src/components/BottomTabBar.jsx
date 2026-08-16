@@ -1,7 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { colors } from '../theme/colors.jsx';
+import { useTheme } from '../theme/ThemeContext.jsx';
 
 const ITEMS = [
   { key: 'Home', label: 'Home', icon: 'home', route: 'Home' },
@@ -15,6 +15,8 @@ const ITEMS = [
 //puede navegar entre pantallas 
 export default function BottomTabBar({ active = 'Home' }) {
   const navigation = useNavigation();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   return (
     <View style={styles.bar}>
@@ -47,29 +49,30 @@ export default function BottomTabBar({ active = 'Home' }) {
   );
 }
 
-const styles = StyleSheet.create({
-  bar: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.white,
-    paddingTop: 8,
-    paddingBottom: 10,
-  },
-  item: { flex: 1, alignItems: 'center' },
-  label: { fontSize: 10, color: colors.placeholder, marginTop: 2 },
-  labelActive: { color: colors.primary, fontWeight: '700' },
-  badge: {
-    position: 'absolute',
-    top: -4,
-    right: -8,
-    backgroundColor: colors.maroon,
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-  },
-  badgeText: { color: colors.white, fontSize: 9, fontWeight: '700' },
-});
+const createStyles = (colors) =>
+  StyleSheet.create({
+    bar: {
+      flexDirection: 'row',
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingTop: 8,
+      paddingBottom: 10,
+    },
+    item: { flex: 1, alignItems: 'center' },
+    label: { fontSize: 10, color: colors.placeholder, marginTop: 2 },
+    labelActive: { color: colors.primary, fontWeight: '700' },
+    badge: {
+      position: 'absolute',
+      top: -4,
+      right: -8,
+      backgroundColor: colors.maroon,
+      borderRadius: 8,
+      minWidth: 16,
+      height: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 3,
+    },
+    badgeText: { color: colors.white, fontSize: 9, fontWeight: '700' },
+  });

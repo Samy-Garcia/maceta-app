@@ -1,11 +1,14 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 import ScreenBackground from './ScreenBackground.jsx';
 import Logo from './Logo.jsx';
-import { colors } from '../theme/colors.jsx';
+import { useTheme } from '../theme/ThemeContext.jsx';
 
 // reutilizada por Login, Register, ForgotPassword, Verification y
 // NewPassword porque llevael fondo de florcitas, tarjeta blanca centrada cuando carga mas ellogo arriba.
 export default function AuthCard({ children, logoSize = 80, scroll = false }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   if (scroll) {
     return (
       <ScreenBackground>
@@ -31,13 +34,14 @@ export default function AuthCard({ children, logoSize = 80, scroll = false }) {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 32 },
-  card: {
-    width: '100%',
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    padding: 24,
-    alignItems: 'center',
-  },
-});
+const createStyles = (colors) =>
+  StyleSheet.create({
+    content: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 32 },
+    card: {
+      width: '100%',
+      backgroundColor: colors.card,
+      borderRadius: 20,
+      padding: 24,
+      alignItems: 'center',
+    },
+  });

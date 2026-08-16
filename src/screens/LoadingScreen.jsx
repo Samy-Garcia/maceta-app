@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme/colors.jsx';
+import { useTheme } from '../theme/ThemeContext.jsx';
 import { useSplashLoader } from '../hooks/useSplashLoader.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 
 // Pantalla de carga: además del tiempo mínimo, espera a saber si ya hay
 // una sesión activa (cookie de login vigente) para saltar directo a Home
 export default function LoadingScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { isReady } = useSplashLoader(1500);
   const { authLoading, isAuthenticated } = useAuth();
 
@@ -30,14 +32,15 @@ export default function LoadingScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-  logo: { width: 110, height: 110, marginBottom: 16 },
-  title: { fontSize: 22, fontWeight: '700', color: colors.primary, textAlign: 'center' },
-  loader: { marginTop: 24 },
-});
+const createStyles = (colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.background,
+    },
+    logo: { width: 110, height: 110, marginBottom: 16 },
+    title: { fontSize: 22, fontWeight: '700', color: colors.primary, textAlign: 'center' },
+    loader: { marginTop: 24 },
+  });

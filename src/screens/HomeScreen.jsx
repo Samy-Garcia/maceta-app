@@ -2,13 +2,15 @@ import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } 
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar.jsx';
-import { colors } from '../theme/colors.jsx';
+import { useTheme } from '../theme/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 
 // Esta es la pantalla que aparece después del login.
 // Desde Home se puede entrar a ver todos o tocar el banner
 // y seguir el proceso de ubicación.
 export default function HomeScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { user } = useAuth();
 
   return (
@@ -84,65 +86,66 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.shopBg },
-  header: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 16 },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    height: 38,
-  },
-  searchInput: { marginLeft: 8, color: colors.white, flex: 1, fontSize: 13 },
-  content: { padding: 20, paddingBottom: 20 },
-  welcome: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 14 },
-  banner: {
-    height: 150,
-    borderRadius: 16,
-    backgroundColor: colors.border,
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  bannerImage: { width: '100%', height: '100%' },
-  badgeNew: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    zIndex: 1,
-  },
-  badgeNewText: { color: colors.white, fontSize: 10, fontWeight: '600' },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
-  seeAll: { fontSize: 12, color: colors.maroon, fontWeight: '600', textDecorationLine: 'underline' },
-  row: { justifyContent: 'space-between' },
-  emptyText: { fontSize: 12, color: colors.placeholder, textAlign: 'center', marginTop: 12 },
-  productCard: { width: '48%', backgroundColor: colors.card, borderRadius: 14, padding: 10, marginBottom: 14 },
-  productImagePlaceholder: {
-    width: '100%',
-    height: 90,
-    borderRadius: 10,
-    backgroundColor: colors.border,
-    marginBottom: 8,
-    overflow: 'hidden',
-  },
-  productImage: { width: '100%', height: '100%' },
-  heartIcon: { position: 'absolute', top: 6, right: 6 },
-  productName: { fontSize: 13, fontWeight: '700', color: colors.text },
-  productDims: { fontSize: 10, color: colors.placeholder, marginTop: 2 },
-  productFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
-  productPrice: { fontSize: 13, fontWeight: '700', color: colors.text },
-  addButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const createStyles = (colors) =>
+  StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: colors.shopBg },
+    header: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 16 },
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255,255,255,0.15)',
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      height: 38,
+    },
+    searchInput: { marginLeft: 8, color: colors.white, flex: 1, fontSize: 13 },
+    content: { padding: 20, paddingBottom: 20 },
+    welcome: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 14 },
+    banner: {
+      height: 150,
+      borderRadius: 16,
+      backgroundColor: colors.border,
+      marginBottom: 16,
+      overflow: 'hidden',
+    },
+    bannerImage: { width: '100%', height: '100%' },
+    badgeNew: {
+      position: 'absolute',
+      top: 10,
+      left: 10,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+      zIndex: 1,
+    },
+    badgeNewText: { color: colors.white, fontSize: 10, fontWeight: '600' },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+    seeAll: { fontSize: 12, color: colors.maroon, fontWeight: '600', textDecorationLine: 'underline' },
+    row: { justifyContent: 'space-between' },
+    emptyText: { fontSize: 12, color: colors.placeholder, textAlign: 'center', marginTop: 12 },
+    productCard: { width: '48%', backgroundColor: colors.card, borderRadius: 14, padding: 10, marginBottom: 14 },
+    productImagePlaceholder: {
+      width: '100%',
+      height: 90,
+      borderRadius: 10,
+      backgroundColor: colors.border,
+      marginBottom: 8,
+      overflow: 'hidden',
+    },
+    productImage: { width: '100%', height: '100%' },
+    heartIcon: { position: 'absolute', top: 6, right: 6 },
+    productName: { fontSize: 13, fontWeight: '700', color: colors.text },
+    productDims: { fontSize: 10, color: colors.placeholder, marginTop: 2 },
+    productFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
+    productPrice: { fontSize: 13, fontWeight: '700', color: colors.text },
+    addButton: {
+      width: 24,
+      height: 24,
+      borderRadius: 6,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  });

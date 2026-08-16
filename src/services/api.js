@@ -8,15 +8,18 @@ export class ApiError extends Error {
   }
 }
 
-// Wrapper de fetch para hablar con la API de Macetas503 (maneja JSON y la cookie de sesión)
+// Wrapper de fetch para hablar con la API de Macetas503 (maneja JSON, FormData y la cookie de sesión)
 export async function apiFetch(path, options = {}) {
+  const isFormData = options.body instanceof FormData;
+
   let response;
   try {
     response = await fetch(`${API_URL}${path}`, {
       ...options,
       credentials: 'include',
       headers: {
-        'Content-Type': 'application/json',
+        // FormData necesita que el navegador/RN ponga su propio boundary en Content-Type
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...options.headers,
       },
     });

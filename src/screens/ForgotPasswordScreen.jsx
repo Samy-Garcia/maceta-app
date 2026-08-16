@@ -4,11 +4,14 @@ import FormInput from '../components/FormInput.jsx';
 import Button from '../components/Button.jsx';
 import GoogleButton from '../components/GoogleButton.jsx';
 import Divider from '../components/Divider.jsx';
-import { colors } from '../theme/colors.jsx';
+import ErrorText from '../components/ErrorText.jsx';
+import { useTheme } from '../theme/ThemeContext.jsx';
 import { useForgotPassword } from '../hooks/useForgotPassword.jsx';
 
 export default function ForgotPasswordScreen({ navigation }) {
-  const { email, setEmail, loading, handleSendCode, handleGoogleLogin } = useForgotPassword(navigation);
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+  const { email, setEmail, loading, error, handleSendCode, handleGoogleLogin } = useForgotPassword(navigation);
 
   return (
     <AuthCard>
@@ -23,6 +26,8 @@ export default function ForgotPasswordScreen({ navigation }) {
         keyboardType="email-address"
       />
 
+      <ErrorText message={error} />
+
       <Button label="Siguiente" onPress={handleSendCode} loading={loading} />
 
       <Divider />
@@ -32,7 +37,8 @@ export default function ForgotPasswordScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  title: { fontSize: 22, fontWeight: '700', color: colors.text, marginTop: 12, textAlign: 'center' },
-  subtitle: { fontSize: 14, color: colors.placeholder, marginTop: 4, marginBottom: 20 },
-});
+const createStyles = (colors) =>
+  StyleSheet.create({
+    title: { fontSize: 22, fontWeight: '700', color: colors.text, marginTop: 12, textAlign: 'center' },
+    subtitle: { fontSize: 14, color: colors.placeholder, marginTop: 4, marginBottom: 20 },
+  });

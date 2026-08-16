@@ -1,9 +1,12 @@
 import { useEffect } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { colors } from '../theme/colors.jsx';
+import { useTheme } from '../theme/ThemeContext.jsx';
 
 // Pantalla de carga Splash Screencon el logo de macetas403
 export default function SplashScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   useEffect(() => {
     const timer = setTimeout(() => navigation.replace('Loading'), 1500);
     return () => clearTimeout(timer);
@@ -25,15 +28,16 @@ export default function SplashScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-  logo: {
-    width: 140,
-    height: 140,
-  },
-});
+const createStyles = (colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.background,
+    },
+    logo: {
+      width: 140,
+      height: 140,
+    },
+  });

@@ -4,10 +4,12 @@ import FormInput from '../components/FormInput.jsx';
 import Button from '../components/Button.jsx';
 import GoogleButton from '../components/GoogleButton.jsx';
 import Divider from '../components/Divider.jsx';
-import { colors } from '../theme/colors.jsx';
+import { useTheme } from '../theme/ThemeContext.jsx';
 import { useNewPassword } from '../hooks/useNewPassword.jsx';
 
 export default function NewPasswordScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const {
     password, setPassword, confirmPassword, setConfirmPassword,
     loading, error, handleSavePassword, goToLogin,
@@ -37,7 +39,7 @@ export default function NewPasswordScreen({ navigation }) {
 
       <Text style={styles.loginLink} onPress={goToLogin}>Iniciar Sesión</Text>
 
-      <Button label="Iniciar Sesión" onPress={handleSavePassword} loading={loading} />
+      <Button label="Guardar Contraseña" onPress={handleSavePassword} loading={loading} />
 
       <Divider />
 
@@ -46,9 +48,10 @@ export default function NewPasswordScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  title: { fontSize: 22, fontWeight: '700', color: colors.text, marginTop: 12, textAlign: 'center' },
-  subtitle: { fontSize: 14, color: colors.placeholder, marginTop: 4, marginBottom: 20, textAlign: 'center' },
-  error: { color: '#C0392B', fontSize: 12, alignSelf: 'flex-start', marginBottom: 8 },
-  loginLink: { alignSelf: 'flex-end', color: colors.text, fontSize: 13, marginBottom: 16 },
-});
+const createStyles = (colors) =>
+  StyleSheet.create({
+    title: { fontSize: 22, fontWeight: '700', color: colors.text, marginTop: 12, textAlign: 'center' },
+    subtitle: { fontSize: 14, color: colors.placeholder, marginTop: 4, marginBottom: 20, textAlign: 'center' },
+    error: { color: '#C0392B', fontSize: 12, alignSelf: 'flex-start', marginBottom: 8 },
+    loginLink: { alignSelf: 'flex-end', color: colors.text, fontSize: 13, marginBottom: 16 },
+  });

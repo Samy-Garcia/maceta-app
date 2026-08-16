@@ -1,20 +1,39 @@
 import { useState } from 'react';
+import { apiFetch } from '../services/api.js';
+import { EMAIL_REGEX } from '../utils/validators.js';
 
-//recuperación de contraseña
+// recuperación de contraseña: pide el código (POST /api/recoveryClient)
 export function useForgotPassword(navigation) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSendCode = () => {
-    if (!email) return;
+  const handleSendCode = async () => {
+    setError('');
+    if (!email) {
+      setError('Ingresa tu correo electrónico.');
+      return;
+    }
+    if (!EMAIL_REGEX.test(email.trim())) {
+      setError('Ingresa un correo electrónico válido.');
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await apiFetch('/api/recoveryClient', {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      navigation.navigate('Verification', { flow: 'recovery', email: email.trim() });
+    } catch (err) {
+      setError(err.message || 'No se pudo enviar el código de recuperación.');
+    } finally {
       setLoading(false);
-      navigation.navigate('Verification');
-    }, 800);
+    }
   };
 
   const handleGoogleLogin = () => {};
 
-  return { email, setEmail, loading, handleSendCode, handleGoogleLogin };
+  return { email, setEmail, loading, error, handleSendCode, handleGoogleLogin };
 }

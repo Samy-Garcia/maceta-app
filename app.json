@@ -24,6 +24,16 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Macetas necesita acceso a tu galería para que elijas una foto de perfil.",
+          "cameraPermission": "Macetas necesita acceso a tu cámara para tomarte una foto de perfil.",
+          "microphonePermission": false
+        }
+      ]
+    ]
   }
 }

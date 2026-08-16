@@ -3,10 +3,12 @@ import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } 
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar.jsx';
-import { colors } from '../theme/colors.jsx';
+import { useTheme } from '../theme/ThemeContext.jsx';
 
 // lista de deseos
 export default function WishlistScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [tab, setTab] = useState('concrete'); // 'concrete' | 'wishlist'
   const [query, setQuery] = useState('');
 
@@ -71,30 +73,31 @@ export default function WishlistScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.shopBg },
-  header: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 14 },
-  searchBar: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20,
-    paddingHorizontal: 14, height: 38, marginBottom: 14,
-  },
-  searchInput: { marginLeft: 8, color: colors.white, flex: 1, fontSize: 13 },
-  tabs: { flexDirection: 'row' },
-  tabLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '600', marginRight: 20, paddingBottom: 4 },
-  tabLabelActive: { color: colors.white, borderBottomWidth: 2, borderBottomColor: colors.white },
-  resultsTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginTop: 16, marginHorizontal: 20 },
-  list: { padding: 20 },
-  row: { justifyContent: 'space-between' },
-  emptyText: { fontSize: 12, color: colors.placeholder, textAlign: 'center', marginTop: 24 },
-  card: { width: '48%', backgroundColor: colors.card, borderRadius: 14, padding: 10, marginBottom: 14 },
-  imagePlaceholder: {
-    width: '100%', height: 100, borderRadius: 10, backgroundColor: colors.border, marginBottom: 8,
-    overflow: 'hidden',
-  },
-  productImage: { width: '100%', height: '100%' },
-  heartIcon: { position: 'absolute', top: 6, right: 6 },
-  name: { fontSize: 12, fontWeight: '700', color: colors.text },
-  ratingRow: { flexDirection: 'row', marginTop: 4 },
-  price: { fontSize: 13, fontWeight: '700', color: colors.primary, marginTop: 4 },
-});
+const createStyles = (colors) =>
+  StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: colors.shopBg },
+    header: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 14 },
+    searchBar: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20,
+      paddingHorizontal: 14, height: 38, marginBottom: 14,
+    },
+    searchInput: { marginLeft: 8, color: colors.white, flex: 1, fontSize: 13 },
+    tabs: { flexDirection: 'row' },
+    tabLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '600', marginRight: 20, paddingBottom: 4 },
+    tabLabelActive: { color: colors.white, borderBottomWidth: 2, borderBottomColor: colors.white },
+    resultsTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginTop: 16, marginHorizontal: 20 },
+    list: { padding: 20 },
+    row: { justifyContent: 'space-between' },
+    emptyText: { fontSize: 12, color: colors.placeholder, textAlign: 'center', marginTop: 24 },
+    card: { width: '48%', backgroundColor: colors.card, borderRadius: 14, padding: 10, marginBottom: 14 },
+    imagePlaceholder: {
+      width: '100%', height: 100, borderRadius: 10, backgroundColor: colors.border, marginBottom: 8,
+      overflow: 'hidden',
+    },
+    productImage: { width: '100%', height: '100%' },
+    heartIcon: { position: 'absolute', top: 6, right: 6 },
+    name: { fontSize: 12, fontWeight: '700', color: colors.text },
+    ratingRow: { flexDirection: 'row', marginTop: 4 },
+    price: { fontSize: 13, fontWeight: '700', color: colors.primary, marginTop: 4 },
+  });

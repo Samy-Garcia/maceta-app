@@ -1,9 +1,12 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
-import { colors } from '../theme/colors.jsx';
+import { useTheme } from '../theme/ThemeContext.jsx';
 
 // Botón de Iniciar sesión con Google
 export default function GoogleButton({ onPress, label = 'Inicia sesión Con Google' }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <TouchableOpacity style={styles.button} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.content}>
@@ -14,18 +17,19 @@ export default function GoogleButton({ onPress, label = 'Inicia sesión Con Goog
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    width: '100%',
-    height: 50,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  content: { flexDirection: 'row', alignItems: 'center' },
-  icon: { marginRight: 10 },
-  label: { color: colors.text, fontSize: 14, fontWeight: '600' },
-});
+const createStyles = (colors) =>
+  StyleSheet.create({
+    button: {
+      width: '100%',
+      height: 50,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    content: { flexDirection: 'row', alignItems: 'center' },
+    icon: { marginRight: 10 },
+    label: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  });

@@ -2,11 +2,14 @@ import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button.jsx';
-import { colors } from '../theme/colors.jsx';
+import { useTheme } from '../theme/ThemeContext.jsx';
 
 //Ubicaciones Actuales y direcciones guardadas
 
 export default function AddressListScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
@@ -75,42 +78,43 @@ export default function AddressListScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.shopBg },
-  header: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTitle: { color: colors.white, fontSize: 17, fontWeight: '700' },
-  list: { padding: 20 },
-  emptyText: { fontSize: 12, color: colors.placeholder, textAlign: 'center', marginBottom: 14 },
-  card: { backgroundColor: colors.white, borderRadius: 14, padding: 16, marginBottom: 14 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  cardLabel: { fontSize: 15, fontWeight: '700', color: colors.text },
-  checkCircle: {
-    width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  cardLine: { fontSize: 12, color: colors.placeholder, lineHeight: 18 },
-  cardPhone: { fontSize: 12, color: colors.text, marginTop: 4, fontWeight: '600' },
-  cardFooter: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border,
-  },
-  primaryBadge: { backgroundColor: colors.maroon, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  primaryBadgeText: { color: colors.white, fontSize: 10, fontWeight: '700' },
-  cardActions: { flexDirection: 'row' },
-  actionButton: { flexDirection: 'row', alignItems: 'center', marginLeft: 14 },
-  actionText: { fontSize: 12, color: colors.text, marginLeft: 4, fontWeight: '600' },
-  addButton: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: colors.primary, borderStyle: 'dashed',
-    borderRadius: 12, paddingVertical: 14, marginTop: 4,
-  },
-  addButtonText: { color: colors.primary, fontWeight: '700', fontSize: 13, marginLeft: 6 },
-  footer: { paddingHorizontal: 20, paddingBottom: 20 },
-});
+const createStyles = (colors) =>
+  StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: colors.shopBg },
+    header: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: 20,
+      paddingVertical: 18,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    headerTitle: { color: colors.white, fontSize: 17, fontWeight: '700' },
+    list: { padding: 20 },
+    emptyText: { fontSize: 12, color: colors.placeholder, textAlign: 'center', marginBottom: 14 },
+    card: { backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 14 },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+    cardLabel: { fontSize: 15, fontWeight: '700', color: colors.text },
+    checkCircle: {
+      width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    cardLine: { fontSize: 12, color: colors.placeholder, lineHeight: 18 },
+    cardPhone: { fontSize: 12, color: colors.text, marginTop: 4, fontWeight: '600' },
+    cardFooter: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border,
+    },
+    primaryBadge: { backgroundColor: colors.maroon, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+    primaryBadgeText: { color: colors.white, fontSize: 10, fontWeight: '700' },
+    cardActions: { flexDirection: 'row' },
+    actionButton: { flexDirection: 'row', alignItems: 'center', marginLeft: 14 },
+    actionText: { fontSize: 12, color: colors.text, marginLeft: 4, fontWeight: '600' },
+    addButton: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      borderWidth: 1, borderColor: colors.primary, borderStyle: 'dashed',
+      borderRadius: 12, paddingVertical: 14, marginTop: 4,
+    },
+    addButtonText: { color: colors.primary, fontWeight: '700', fontSize: 13, marginLeft: 6 },
+    footer: { paddingHorizontal: 20, paddingBottom: 20 },
+  });
