@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useHomeBestsellers } from '../hooks/useHomeBestsellers.jsx';
 
 // Esta es la pantalla que aparece después del login.
 // Desde Home se puede entrar a ver todos o tocar el banner
@@ -12,6 +13,7 @@ export default function HomeScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const { user } = useAuth();
+  const { items, loading, error, favoriteIds, toggleFavorite, addToCart } = useHomeBestsellers();
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -47,38 +49,63 @@ export default function HomeScreen({ navigation }) {
 
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Populares</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('EnterLocation')}>
+              <TouchableOpacity onPress={() => navigation.navigate('Products')}>
                 <Text style={styles.seeAll}>Ver Todos</Text>
               </TouchableOpacity>
             </View>
+
+            {loading ? <Text style={styles.emptyText}>Cargando productos populares...</Text> : null}
+            {error ? <Text style={styles.emptyText}>{error}</Text> : null}
           </>
         }
-        data={[]}
-        keyExtractor={(item) => item.id}
+        data={items}
+        keyExtractor={(item) => `${item.productType}-${item.id}`}
         numColumns={2}
         columnWrapperStyle={styles.row}
-        ListEmptyComponent={<Text style={styles.emptyText}>Aún no hay productos disponibles.</Text>}
-        renderItem={({ item }) => (
-          <View style={styles.productCard}>
-            <View style={styles.productImagePlaceholder}>
-              <Image source={item.image} style={styles.productImage} resizeMode="cover" />
-              <Ionicons
-                name={item.favorite ? 'heart' : 'heart-outline'}
-                size={16}
-                color={colors.maroon}
-                style={styles.heartIcon}
-              />
-            </View>
-            <Text style={styles.productName}>{item.name}</Text>
-            <Text style={styles.productDims}>{item.dimensions}</Text>
-            <View style={styles.productFooter}>
-              <Text style={styles.productPrice}>$ {item.price.toFixed(2)}</Text>
-              <View style={styles.addButton}>
-                <Ionicons name="add" size={16} color={colors.white} />
+        ListEmptyComponent={
+          !loading && !error ? (
+            <Text style={styles.emptyText}>Aún no hay productos disponibles.</Text>
+          ) : null
+        }
+        renderItem={({ item }) => {
+          const isFavorite = favoriteIds.has(item.id);
+          return (
+            <TouchableOpacity
+              style={styles.productCard}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('ProductDetail', { product: item })}
+            >
+              <View style={styles.productImagePlaceholder}>
+                {item.image ? (
+                  <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="cover" />
+                ) : (
+                  <Ionicons name="leaf-outline" size={22} color={colors.placeholder} />
+                )}
+                <TouchableOpacity style={styles.heartIcon} onPress={() => toggleFavorite(item)}>
+                  <Ionicons
+                    name={isFavorite ? 'heart' : 'heart-outline'}
+                    size={16}
+                    color={colors.maroon}
+                  />
+                </TouchableOpacity>
               </View>
-            </View>
-          </View>
-        )}
+              <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
+              <Text style={styles.productDims}>{item.sold ? `${item.sold} vendidos` : ''}</Text>
+              <View style={styles.productFooter}>
+                <Text style={styles.productPrice}>
+                  $ {(item.discountedPrice ?? item.price).toFixed(2)}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.addButton, !item.stock && styles.addButtonDisabled]}
+                  onPress={() => addToCart(item)}
+                  disabled={!item.stock}
+                >
+                  <Ionicons name="add" size={16} color={colors.white} />
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
       />
 
       <BottomTabBar active="Home" />
@@ -133,6 +160,8 @@ const createStyles = (colors) =>
       backgroundColor: colors.border,
       marginBottom: 8,
       overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     productImage: { width: '100%', height: '100%' },
     heartIcon: { position: 'absolute', top: 6, right: 6 },
@@ -148,4 +177,5 @@ const createStyles = (colors) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
+    addButtonDisabled: { opacity: 0.4 },
   });

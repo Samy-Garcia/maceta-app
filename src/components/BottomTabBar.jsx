@@ -2,6 +2,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext.jsx';
+import { useCart } from '../context/CartContext.jsx';
 
 const ITEMS = [
   { key: 'Home', label: 'Home', icon: 'home', route: 'Home' },
@@ -12,16 +13,18 @@ const ITEMS = [
 ];
 
 // Barra inferior
-//puede navegar entre pantallas 
+//puede navegar entre pantallas
 export default function BottomTabBar({ active = 'Home' }) {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const { itemCount } = useCart();
 
   return (
     <View style={styles.bar}>
       {ITEMS.map((item) => {
         const isActive = item.key === active;
+        const badge = item.key === 'Carrito' && itemCount > 0 ? itemCount : null;
         return (
           <TouchableOpacity
             key={item.key}
@@ -35,9 +38,9 @@ export default function BottomTabBar({ active = 'Home' }) {
                 size={20}
                 color={isActive ? colors.primary : colors.placeholder}
               />
-              {item.badge ? (
+              {badge ? (
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{item.badge}</Text>
+                  <Text style={styles.badgeText}>{badge}</Text>
                 </View>
               ) : null}
             </View>
