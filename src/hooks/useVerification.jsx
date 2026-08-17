@@ -3,7 +3,9 @@ import { apiFetch } from '../services/api.js';
 
 // verificación del código de 6 dígitos: sirve tanto para confirmar el registro
 // (POST /api/registerClient/verifyCodeEmail) como para la recuperación de contraseña
-// (POST /api/recoveryClient/verifyCode). El flujo llega por route.params.flow.
+// (POST /api/recoveryPasswordClient/verifyCode — el Swagger la documenta como
+// /api/recoveryClient/verifyCode, pero el backend real usa ese otro nombre).
+// El flujo llega por route.params.flow.
 export function useVerification(navigation, params = {}) {
   const { flow = 'recovery', email = '' } = params;
   const [code, setCode] = useState('');
@@ -26,7 +28,7 @@ export function useVerification(navigation, params = {}) {
         });
         navigation.reset({ index: 0, routes: [{ name: 'Login', params: { registered: true } }] });
       } else {
-        await apiFetch('/api/recoveryClient/verifyCode', {
+        await apiFetch('/api/recoveryPasswordClient/verifyCode', {
           method: 'POST',
           body: JSON.stringify({ code }),
         });

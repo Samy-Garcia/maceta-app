@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { apiFetch } from '../services/api.js';
 import { PASSWORD_HINT, PASSWORD_REGEX } from '../utils/validators.js';
 
-// establecer la nueva contraseña (POST /api/recoveryClient/newPassword)
+// establecer la nueva contraseña (POST /api/recoveryPasswordClient/newPassword
+// — el Swagger la documenta como /api/recoveryClient/newPassword, pero el
+// backend real usa ese otro nombre)
 export function useNewPassword(navigation) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -26,7 +28,7 @@ export function useNewPassword(navigation) {
 
     setLoading(true);
     try {
-      await apiFetch('/api/recoveryClient/newPassword', {
+      await apiFetch('/api/recoveryPasswordClient/newPassword', {
         method: 'POST',
         body: JSON.stringify({ newPassword: password, confirmPassword }),
       });
