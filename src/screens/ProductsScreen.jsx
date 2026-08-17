@@ -1,7 +1,8 @@
-import { Alert, FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar.jsx';
+import FiltersModal from '../components/FiltersModal.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { useProducts } from '../hooks/useProducts.jsx';
 import { isRecentlyAdded } from '../utils/normalizeProduct.js';
@@ -13,16 +14,11 @@ export default function ProductsScreen({ navigation }) {
     tabs, activeTab, changeTab, query, setQuery, items, totalCount,
     loading, error, retry, hasMore, loadMore,
     favoriteIds, toggleFavorite, addToCart, sortOrder, setSortOrder,
+    filtersVisible, setFiltersVisible,
+    availableSizes, sizeFilters, toggleSizeFilter,
+    availableColors, colorFilters, toggleColorFilter,
+    maxPrice, priceRange, setPriceRange, resetFilters, activeFilterCount,
   } = useProducts();
-
-  const openFilters = () => {
-    Alert.alert('Ordenar por', undefined, [
-      { text: 'Recomendados', onPress: () => setSortOrder('default') },
-      { text: 'Precio: menor a mayor', onPress: () => setSortOrder('price-asc') },
-      { text: 'Precio: mayor a menor', onPress: () => setSortOrder('price-desc') },
-      { text: 'Cancelar', style: 'cancel' },
-    ]);
-  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -50,9 +46,14 @@ export default function ProductsScreen({ navigation }) {
           <>
             <View style={styles.titleRow}>
               <Text style={styles.title}>Todos los{'\n'}Productos</Text>
-              <TouchableOpacity style={styles.filtersButton} onPress={openFilters}>
+              <TouchableOpacity style={styles.filtersButton} onPress={() => setFiltersVisible(true)}>
                 <Ionicons name="options-outline" size={14} color={colors.text} />
                 <Text style={styles.filtersText}>Filtros</Text>
+                {activeFilterCount > 0 ? (
+                  <View style={styles.filtersBadge}>
+                    <Text style={styles.filtersBadgeText}>{activeFilterCount}</Text>
+                  </View>
+                ) : null}
               </TouchableOpacity>
             </View>
 
@@ -156,6 +157,23 @@ export default function ProductsScreen({ navigation }) {
       />
 
       <BottomTabBar active="Productos" />
+
+      <FiltersModal
+        visible={filtersVisible}
+        onClose={() => setFiltersVisible(false)}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+        availableSizes={availableSizes}
+        sizeFilters={sizeFilters}
+        toggleSizeFilter={toggleSizeFilter}
+        availableColors={availableColors}
+        colorFilters={colorFilters}
+        toggleColorFilter={toggleColorFilter}
+        maxPrice={maxPrice}
+        priceRange={priceRange}
+        setPriceRange={setPriceRange}
+        resetFilters={resetFilters}
+      />
     </SafeAreaView>
   );
 }
@@ -189,6 +207,11 @@ const createStyles = (colors) =>
       borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginTop: 4,
     },
     filtersText: { fontSize: 12, color: colors.text, marginLeft: 6, fontWeight: '600' },
+    filtersBadge: {
+      backgroundColor: colors.maroon, borderRadius: 8, minWidth: 16, height: 16,
+      alignItems: 'center', justifyContent: 'center', marginLeft: 6, paddingHorizontal: 3,
+    },
+    filtersBadgeText: { color: colors.white, fontSize: 9, fontWeight: '700' },
     tabs: { paddingVertical: 16 },
     tabPill: {
       backgroundColor: colors.card, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 9, marginRight: 10,

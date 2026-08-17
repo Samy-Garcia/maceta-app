@@ -13,6 +13,9 @@ export function normalizeProduct(item, productType) {
     productType,
     createdAt: item.createdAt,
     sold: item.sold,
+    // variantes reales que ofrece el producto (para los filtros de Tamaño/Color)
+    sizes: item.sizes?.length ? item.sizes : [item.size].filter(Boolean),
+    colorOptions: item.colorOptions || [],
   };
 }
 
