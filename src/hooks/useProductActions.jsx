@@ -47,13 +47,13 @@ export function useProductActions() {
     }
   };
 
-  const addToCart = async (product) => {
+  const addToCart = async (product, quantity = 1) => {
     if (!product.stock) {
       Alert.alert('Sin stock', 'Este producto no tiene unidades disponibles por ahora.');
       return;
     }
     try {
-      await addToCartApi(product.id, product.productType, 1);
+      await addToCartApi(product.id, product.productType, quantity);
       Alert.alert('Agregado', `${product.name} se agregó al carrito.`);
     } catch (err) {
       Alert.alert('Error', err.message || 'No se pudo agregar el producto al carrito.');

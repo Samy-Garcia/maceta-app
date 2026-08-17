@@ -25,11 +25,14 @@ export async function fetchRoute(origin, destination) {
 // así que se manda un Referer explícito para no quedar bloqueados.
 const NOMINATIM_HEADERS = { 'Accept-Language': 'es', Referer: 'https://macetas503.app' };
 
+// Devuelve tanto el texto completo (para mostrar / mandar al checkout) como
+// los componentes sueltos que pide el modelo Address del backend
+// (addressLine, municipality, department) para poder guardarla de verdad.
 export async function reverseGeocode(lat, lng) {
   let res;
   try {
     res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
       { headers: NOMINATIM_HEADERS }
     );
   } catch {
@@ -37,7 +40,17 @@ export async function reverseGeocode(lat, lng) {
   }
   if (!res.ok) throw new Error('No se pudo obtener la dirección de ese punto.');
   const data = await res.json();
-  return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  const addr = data.address || {};
+  const fallbackLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+  return {
+    label: data.display_name || fallbackLabel,
+    addressLine:
+      [addr.house_number, addr.road].filter(Boolean).join(' ') ||
+      addr.road || addr.neighbourhood || addr.suburb || data.display_name || fallbackLabel,
+    municipality: addr.city || addr.town || addr.municipality || addr.county || addr.suburb || '',
+    department: addr.state || addr.region || '',
+  };
 }
 
 export async function searchAddress(query) {

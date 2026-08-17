@@ -1,9 +1,8 @@
-import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar.jsx';
 import Button from '../components/Button.jsx';
-import ErrorText from '../components/ErrorText.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { useCartScreen } from '../hooks/useCartScreen.jsx';
 
@@ -11,10 +10,8 @@ export default function CartScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const {
-    items, loading, subtotal, discount, shippingCost, shippingInfo, total,
-    couponCode, setCouponCode, matchedRedemption, contactPhone, setContactPhone,
-    itemLabel, changeQuantity, handleRemove, handleCheckout, goToShippingMap,
-    checkingOut, error, busyItemId,
+    items, loading, subtotal, shippingCost, shippingInfo, total,
+    itemLabel, changeQuantity, handleRemove, goToShippingMap, goToPayment,
   } = useCartScreen(navigation);
 
   return (
@@ -51,23 +48,15 @@ export default function CartScreen({ navigation }) {
               <Text style={styles.itemPrice}>$ {item.unitPrice.toFixed(2)}</Text>
             </View>
             <View style={styles.itemActions}>
-              <TouchableOpacity onPress={() => handleRemove(item)} disabled={busyItemId === item._id}>
+              <TouchableOpacity onPress={() => handleRemove(item)}>
                 <Ionicons name="trash" size={18} color={colors.maroonDark} />
               </TouchableOpacity>
               <View style={styles.stepper}>
-                <TouchableOpacity
-                  style={styles.stepperButton}
-                  onPress={() => changeQuantity(item, item.quantity - 1)}
-                  disabled={busyItemId === item._id}
-                >
+                <TouchableOpacity style={styles.stepperButton} onPress={() => changeQuantity(item, item.quantity - 1)}>
                   <Ionicons name="remove" size={14} color={colors.primary} />
                 </TouchableOpacity>
                 <Text style={styles.stepperValue}>{item.quantity}</Text>
-                <TouchableOpacity
-                  style={styles.stepperButton}
-                  onPress={() => changeQuantity(item, item.quantity + 1)}
-                  disabled={busyItemId === item._id}
-                >
+                <TouchableOpacity style={styles.stepperButton} onPress={() => changeQuantity(item, item.quantity + 1)}>
                   <Ionicons name="add" size={14} color={colors.primary} />
                 </TouchableOpacity>
               </View>
@@ -105,41 +94,6 @@ export default function CartScreen({ navigation }) {
           <Ionicons name="chevron-forward" size={18} color={colors.placeholder} />
         </TouchableOpacity>
 
-        <Text style={styles.label}>Teléfono de contacto</Text>
-        <TextInput
-          style={styles.couponInput}
-          value={contactPhone}
-          onChangeText={setContactPhone}
-          placeholder="Ej. 503-7777-8888"
-          placeholderTextColor={colors.placeholder}
-          keyboardType="phone-pad"
-        />
-
-        <View style={styles.sectionHeader}>
-          <Ionicons name="pricetag-outline" size={16} color={colors.text} />
-          <Text style={styles.sectionTitle}>¿TIENES UN CÓDIGO?</Text>
-        </View>
-        <View style={styles.couponRow}>
-          <TextInput
-            style={styles.couponInput}
-            value={couponCode}
-            onChangeText={setCouponCode}
-            placeholder="Código de descuento"
-            placeholderTextColor={colors.placeholder}
-            autoCapitalize="characters"
-          />
-        </View>
-        {couponCode.trim() && !matchedRedemption ? (
-          <Text style={styles.couponHint}>Ese código no está en tus canjes pendientes.</Text>
-        ) : null}
-        {matchedRedemption ? (
-          <Text style={styles.couponHintOk}>
-            {matchedRedemption.type === 'coupon'
-              ? `Cupón válido: -${matchedRedemption.discountPercent}%`
-              : 'Cupón de envío gratis válido.'}
-          </Text>
-        ) : null}
-
         <View style={styles.sectionHeader}>
           <Ionicons name="receipt-outline" size={16} color={colors.text} />
           <Text style={styles.sectionTitle}>RESUMEN</Text>
@@ -156,12 +110,6 @@ export default function CartScreen({ navigation }) {
               {shippingInfo ? (shippingCost > 0 ? `$ ${shippingCost.toFixed(2)}` : 'Gratis') : 'Marca tu ubicación'}
             </Text>
           </View>
-          {discount > 0 ? (
-            <View style={styles.summaryRow}>
-              <Text style={styles.discountLabel}>Descuento</Text>
-              <Text style={styles.discountValue}>- $ {discount.toFixed(2)}</Text>
-            </View>
-          ) : null}
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
             <View style={styles.totalLabelRow}>
@@ -172,9 +120,7 @@ export default function CartScreen({ navigation }) {
           </View>
         </View>
 
-        <ErrorText message={error} />
-
-        <Button label="Pagar" onPress={handleCheckout} loading={checkingOut} />
+        <Button label="Confirmar Orden" onPress={goToPayment} />
 
         <TouchableOpacity style={styles.keepShoppingButton} onPress={() => navigation.navigate('Products')}>
           <Text style={styles.keepShoppingText}>Seguir Comprando</Text>
@@ -252,22 +198,11 @@ const createStyles = (colors) =>
     },
     addressInfo: { flex: 1 },
     addressTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
-    addressDetail: { fontSize: 12, color: colors.placeholder, marginTop: 2 },
     addressMeta: { fontSize: 11, color: colors.placeholder, marginTop: 4 },
-    label: { fontSize: 12, color: colors.placeholder, marginTop: 14, marginBottom: 6 },
-    couponRow: { flexDirection: 'row' },
-    couponInput: {
-      flex: 1, height: 46, borderRadius: 12, paddingHorizontal: 14,
-      backgroundColor: colors.surface, color: colors.text, fontSize: 13,
-    },
-    couponHint: { fontSize: 11, color: colors.maroonDark, marginTop: 6 },
-    couponHintOk: { fontSize: 11, color: colors.primary, marginTop: 6, fontWeight: '700' },
     summaryCard: { backgroundColor: colors.card, borderRadius: 14, padding: 16 },
     summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 },
     summaryLabel: { fontSize: 13, color: colors.placeholder },
     summaryValue: { fontSize: 13, color: colors.text, fontWeight: '600' },
-    discountLabel: { fontSize: 13, color: colors.maroonDark },
-    discountValue: { fontSize: 13, color: colors.maroonDark, fontWeight: '700' },
     divider: { height: 1, backgroundColor: colors.border, marginVertical: 6 },
     totalLabelRow: { flexDirection: 'row', alignItems: 'center' },
     totalDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginRight: 6 },

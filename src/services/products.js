@@ -16,3 +16,11 @@ export const fetchPlantas = () => apiFetch('/api/plants');
 export const fetchBestsellers = (limit = 12) => apiFetch(`/api/orders/bestsellers?limit=${limit}`);
 export const fetchOffers = () => apiFetch('/api/offers');
 export const fetchFavoriteIds = () => apiFetch('/api/wishlist/favorites');
+
+// Detalle completo de un producto (la lista solo trae lo básico)
+const DETAIL_FETCHERS = {
+  maceta: (id) => apiFetch(`/api/post/${id}`),
+  vela: (id) => apiFetch(`/api/candles/${id}`),
+  planta: (id) => apiFetch(`/api/plants/${id}`),
+};
+export const fetchProductDetail = (productType, id) => DETAIL_FETCHERS[productType](id);

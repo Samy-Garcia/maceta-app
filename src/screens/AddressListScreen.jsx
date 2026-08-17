@@ -1,79 +1,64 @@
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Button from '../components/Button.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
+import { useAddressList } from '../hooks/useAddressList.jsx';
 
-//Ubicaciones Actuales y direcciones guardadas
-
+// Direcciones reales de la cuenta: se llenan al elegir una ubicación en el
+// mapa de OpenStreetMap (desde el carrito o desde "Agregar nueva dirección" aquí).
 export default function AddressListScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const { addresses, goToAddAddress, handleDelete } = useAddressList(navigation);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Dirección de envío</Text>
+        <Text style={styles.headerTitle}>Mis Direcciones</Text>
         <Ionicons name="menu" size={22} color={colors.white} />
       </View>
 
       <FlatList
         contentContainerStyle={styles.list}
-        data={[]}
-        keyExtractor={(item) => item.id}
+        data={addresses}
+        keyExtractor={(item) => item._id}
         ListEmptyComponent={<Text style={styles.emptyText}>No tienes direcciones guardadas todavía.</Text>}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardLabel}>{item.label}</Text>
-              <View style={styles.checkCircle}>
-                <Ionicons name="checkmark" size={14} color={colors.white} />
-              </View>
+              <Text style={styles.cardLabel}>{item.municipality}, {item.department}</Text>
+              {item.isDefault ? (
+                <View style={styles.checkCircle}>
+                  <Ionicons name="checkmark" size={14} color={colors.white} />
+                </View>
+              ) : null}
             </View>
 
-            {item.lines.map((line) => (
-              <Text key={line} style={styles.cardLine}>{line}</Text>
-            ))}
+            <Text style={styles.cardLine}>{item.addressLine}</Text>
             <Text style={styles.cardPhone}>{item.phone}</Text>
 
             <View style={styles.cardFooter}>
-              {item.isPrimary ? (
+              {item.isDefault ? (
                 <View style={styles.primaryBadge}>
                   <Text style={styles.primaryBadgeText}>Principal</Text>
                 </View>
               ) : <View />}
               <View style={styles.cardActions}>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => navigation.navigate('EditLocation')}
-                >
-                  <Ionicons name="pencil" size={13} color={colors.text} />
-                  <Text style={styles.actionText}>Editar</Text>
+                <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item)}>
+                  <Ionicons name="trash" size={13} color={colors.maroon} />
+                  <Text style={[styles.actionText, { color: colors.maroon }]}>Eliminar</Text>
                 </TouchableOpacity>
-                {!item.isPrimary ? (
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Ionicons name="trash" size={13} color={colors.maroon} />
-                    <Text style={[styles.actionText, { color: colors.maroon }]}>Eliminar</Text>
-                  </TouchableOpacity>
-                ) : null}
               </View>
             </View>
           </View>
         )}
         ListFooterComponent={
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => navigation.navigate('EnterLocation')}
-          >
+          <TouchableOpacity style={styles.addButton} onPress={goToAddAddress}>
             <Ionicons name="add" size={18} color={colors.primary} />
-            <Text style={styles.addButtonText}>Agregar nueva dirección</Text>
+            <Text style={styles.addButtonText}>Agregar nueva dirección (mapa)</Text>
           </TouchableOpacity>
         }
       />
-
-      <View style={styles.footer}>
-        <Button label="Continuar" onPress={() => navigation.navigate('MapLocation')} />
-      </View>
     </SafeAreaView>
   );
 }
@@ -94,7 +79,7 @@ const createStyles = (colors) =>
     emptyText: { fontSize: 12, color: colors.placeholder, textAlign: 'center', marginBottom: 14 },
     card: { backgroundColor: colors.surface, borderRadius: 14, padding: 16, marginBottom: 14 },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-    cardLabel: { fontSize: 15, fontWeight: '700', color: colors.text },
+    cardLabel: { fontSize: 15, fontWeight: '700', color: colors.text, flex: 1, marginRight: 8 },
     checkCircle: {
       width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary,
       alignItems: 'center', justifyContent: 'center',
@@ -116,5 +101,4 @@ const createStyles = (colors) =>
       borderRadius: 12, paddingVertical: 14, marginTop: 4,
     },
     addButtonText: { color: colors.primary, fontWeight: '700', fontSize: 13, marginLeft: 6 },
-    footer: { paddingHorizontal: 20, paddingBottom: 20 },
   });

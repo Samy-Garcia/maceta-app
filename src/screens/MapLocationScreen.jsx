@@ -15,8 +15,9 @@ export default function MapLocationScreen({ navigation, route: navRoute }) {
   const styles = createStyles(colors);
   const mapRef = useRef(null);
   const {
-    store, address, route, shippingCost, loading, error,
-    query, setQuery, searching, handleSearch, selectLocation, confirm, canConfirm,
+    store, address, route, shippingCost, loading, saving, error,
+    query, setQuery, searching, handleSearch, selectLocation, confirm,
+    qualifiesForFreeShipping, freeShippingMinAmount,
   } = useShippingMap(navigation, navRoute?.params?.returnTo);
 
   useEffect(() => {
@@ -58,6 +59,12 @@ export default function MapLocationScreen({ navigation, route: navRoute }) {
         </View>
       </View>
 
+      {qualifiesForFreeShipping ? (
+        <View style={styles.freeShippingBanner}>
+          <Text style={styles.freeShippingText}>🎉 ¡Tu pedido califica para envío gratis!</Text>
+        </View>
+      ) : null}
+
       <View style={styles.mapWrapper}>
         <OsmMapPicker ref={mapRef} storeLat={store.lat} storeLng={store.lng} onSelect={selectLocation} />
       </View>
@@ -72,14 +79,20 @@ export default function MapLocationScreen({ navigation, route: navRoute }) {
 
         {route ? (
           <Text style={styles.routeInfo}>
-            Distancia: {(route.distanciaMetros / 1000).toFixed(2)} km · Tiempo: {Math.round(route.duracionSegundos / 60)} min
-            · Envío: $ {shippingCost.toFixed(2)}
+            Distancia: {(route.distanciaMetros / 1000).toFixed(2)} km — Tiempo estimado: {Math.round(route.duracionSegundos / 60)} min
+            — Envío: <Text style={styles.routeInfoStrong}>{shippingCost > 0 ? `$ ${shippingCost.toFixed(2)}` : 'Gratis'}</Text>
+          </Text>
+        ) : null}
+
+        {!qualifiesForFreeShipping && freeShippingMinAmount ? (
+          <Text style={styles.freeShippingHint}>
+            Envío gratis en compras desde $ {freeShippingMinAmount.toFixed(2)}
           </Text>
         ) : null}
       </View>
 
       <View style={styles.footer}>
-        <Button label="Confirmar ubicación" onPress={confirm} disabled={!canConfirm} />
+        <Button label="Confirmar ubicación" onPress={confirm} loading={loading || saving} />
       </View>
     </SafeAreaView>
   );
@@ -125,5 +138,12 @@ const createStyles = (colors) =>
     errorText: { fontSize: 12, color: colors.maroonDark, marginTop: 4 },
     address: { fontSize: 13, color: colors.text, fontWeight: '600', marginTop: 6 },
     routeInfo: { fontSize: 12, color: colors.placeholder, marginTop: 4 },
+    routeInfoStrong: { color: colors.primary, fontWeight: '700' },
+    freeShippingBanner: {
+      marginHorizontal: 20, marginTop: 10, backgroundColor: colors.primarySoft,
+      borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12,
+    },
+    freeShippingText: { color: colors.primary, fontWeight: '700', fontSize: 12, textAlign: 'center' },
+    freeShippingHint: { fontSize: 11, color: colors.placeholder, marginTop: 4 },
     footer: { paddingHorizontal: 20, paddingVertical: 16 },
   });
