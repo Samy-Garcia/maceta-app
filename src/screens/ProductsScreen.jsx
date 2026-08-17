@@ -6,6 +6,7 @@ import FiltersModal from '../components/FiltersModal.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { useProducts } from '../hooks/useProducts.jsx';
 import { isRecentlyAdded } from '../utils/normalizeProduct.js';
+import { favoriteKey } from '../hooks/useProductActions.jsx';
 
 export default function ProductsScreen({ navigation }) {
   const { colors } = useTheme();
@@ -86,7 +87,7 @@ export default function ProductsScreen({ navigation }) {
           </>
         }
         renderItem={({ item }) => {
-          const isFavorite = favoriteIds.has(item.id);
+          const isFavorite = favoriteIds.has(favoriteKey(item.productType, item.id));
           const badge =
             activeTab === 'bestsellers' && item.sold
               ? `${item.sold} vendidos`

@@ -88,7 +88,9 @@ export function useEditCard(navigation, cardId) {
         : [...cards, { id: Date.now().toString(), ...cardData }];
 
       await saveCards(user?.email, next);
-      navigation.goBack();
+      Alert.alert(cardId ? 'Tarjeta actualizada' : 'Tarjeta agregada', undefined, [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
     } catch {
       setError('No se pudo guardar la tarjeta.');
     } finally {

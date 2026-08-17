@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchProductDetail } from '../services/products.js';
 import { fetchProductReviews } from '../services/reviews.js';
-import { useProductActions } from './useProductActions.jsx';
+import { favoriteKey, useProductActions } from './useProductActions.jsx';
 
 // Trae el detalle completo de un producto real (la lista solo manda lo
 // básico) y su calificación real calculada por el backend a partir de
@@ -96,7 +96,7 @@ export function useProductDetail(navigation, routeParams = {}) {
     increment,
     decrement,
     adding,
-    isFavorite: favoriteIds.has(product.id || product._id),
+    isFavorite: favoriteIds.has(favoriteKey(summary.productType, product.id || product._id)),
     toggleFavorite: () => toggleFavorite({ id: product.id || product._id, productType: summary.productType }),
     handleAddToCart,
   };

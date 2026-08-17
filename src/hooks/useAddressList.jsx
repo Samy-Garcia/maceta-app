@@ -10,6 +10,7 @@ export function useAddressList(navigation) {
   const addresses = user?.addresses || [];
 
   const goToAddAddress = () => navigation.navigate('MapLocation', { returnTo: 'AddressList' });
+  const goToEditAddress = (address) => navigation.navigate('EditLocation', { address });
 
   const handleDelete = (address) => {
     Alert.alert('Eliminar dirección', `¿Quitar "${address.addressLine}" de tus direcciones?`, [
@@ -30,5 +31,5 @@ export function useAddressList(navigation) {
     ]);
   };
 
-  return { addresses, goToAddAddress, handleDelete };
+  return { addresses, goToAddAddress, goToEditAddress, handleDelete };
 }

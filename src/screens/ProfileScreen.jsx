@@ -1,36 +1,14 @@
-import { Alert, Image, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
-import { useAuth } from '../context/AuthContext.jsx';
-
-const MENU_ITEMS = [
-  { key: 'orders', icon: 'receipt-outline', label: 'Mis pedidos', subtitle: 'Ver historial de compras', route: 'Orders' },
-  { key: 'cards', icon: 'card-outline', label: 'Métodos de pago', subtitle: 'Tarjetas guardadas', route: 'ManageCards' },
-  { key: 'addresses', icon: 'location-outline', label: 'Direcciones', subtitle: 'Ubicaciones guardadas', route: 'AddressList' },
-];
+import { useProfile } from '../hooks/useProfile.jsx';
 
 export default function ProfileScreen({ navigation }) {
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors } = useTheme();
   const styles = createStyles(colors);
-  const { user, logout } = useAuth();
-
-  const fullName = [user?.name, user?.lastName].filter(Boolean).join(' ') || 'Usuario';
-
-  const handleLogout = () => {
-    Alert.alert('Cerrar sesión', '¿Seguro que quieres cerrar tu sesión?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Cerrar sesión',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-        },
-      },
-    ]);
-  };
+  const { user, fullName, isDark, toggleTheme, menuItems, handleLogout } = useProfile(navigation);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -55,7 +33,7 @@ export default function ProfileScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {MENU_ITEMS.map((item) => (
+        {menuItems.map((item) => (
           <TouchableOpacity
             key={item.key}
             style={styles.row}

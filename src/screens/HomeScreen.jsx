@@ -5,6 +5,7 @@ import BottomTabBar from '../components/BottomTabBar.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useHomeBestsellers } from '../hooks/useHomeBestsellers.jsx';
+import { favoriteKey } from '../hooks/useProductActions.jsx';
 
 // Esta es la pantalla que aparece después del login.
 // Desde Home se puede entrar a ver todos o tocar el banner
@@ -68,7 +69,7 @@ export default function HomeScreen({ navigation }) {
           ) : null
         }
         renderItem={({ item }) => {
-          const isFavorite = favoriteIds.has(item.id);
+          const isFavorite = favoriteIds.has(favoriteKey(item.productType, item.id));
           return (
             <TouchableOpacity
               style={styles.productCard}

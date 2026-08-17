@@ -9,7 +9,7 @@ import { useAddressList } from '../hooks/useAddressList.jsx';
 export default function AddressListScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const { addresses, goToAddAddress, handleDelete } = useAddressList(navigation);
+  const { addresses, goToAddAddress, goToEditAddress, handleDelete } = useAddressList(navigation);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -44,6 +44,10 @@ export default function AddressListScreen({ navigation }) {
                 </View>
               ) : <View />}
               <View style={styles.cardActions}>
+                <TouchableOpacity style={styles.actionButton} onPress={() => goToEditAddress(item)}>
+                  <Ionicons name="pencil" size={13} color={colors.text} />
+                  <Text style={styles.actionText}>Editar</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item)}>
                   <Ionicons name="trash" size={13} color={colors.maroon} />
                   <Text style={[styles.actionText, { color: colors.maroon }]}>Eliminar</Text>
