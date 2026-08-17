@@ -21,15 +21,15 @@ export default function NewPasswordScreen({ navigation }) {
       <Text style={styles.subtitle}>Ingrese Contraseña Nueva</Text>
 
       <FormInput
-        label="Contraseña"
-        placeholder="Ingresa Tu Contraseña"
+        label="Contraseña Nueva"
+        placeholder="Ingresa tu contraseña"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
       <FormInput
-        label="Reescriba su contraseña"
-        placeholder="Ingresa Tu Contraseña"
+        label="Confirmar Contraseña Nueva"
+        placeholder="Ingresa tu contraseña"
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         secureTextEntry
