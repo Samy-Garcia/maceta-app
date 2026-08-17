@@ -6,6 +6,7 @@ import Button from '../components/Button.jsx';
 import ErrorText from '../components/ErrorText.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { usePayment } from '../hooks/usePayment.jsx';
+import { filterPhoneChars } from '../utils/validators.js';
 
 export default function PaymentScreen({ navigation }) {
   const { colors } = useTheme();
@@ -34,10 +35,11 @@ export default function PaymentScreen({ navigation }) {
               <TextInput
                 style={styles.input}
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={(text) => setPhone(filterPhoneChars(text))}
                 keyboardType="phone-pad"
                 placeholder="7000-0000"
                 placeholderTextColor={colors.placeholder}
+                maxLength={12}
               />
             </View>
             <View style={styles.halfField}>

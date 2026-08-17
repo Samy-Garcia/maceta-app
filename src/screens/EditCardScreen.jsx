@@ -11,7 +11,7 @@ export default function EditCardScreen({ navigation, route }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const {
-    cardNumber, handleCardNumberChange, holder, setHolder, expiry, setExpiry, cvv, setCvv,
+    cardNumber, handleCardNumberChange, holder, setHolder, expiry, handleExpiryChange, cvv, setCvv,
     previewLast4, previewBrand, saving, error, handleSave, handleDelete, isEditing,
   } = useEditCard(navigation, route?.params?.cardId);
 
@@ -96,7 +96,7 @@ export default function EditCardScreen({ navigation, route }) {
                 <TextInput
                   style={styles.input}
                   value={expiry}
-                  onChangeText={setExpiry}
+                  onChangeText={handleExpiryChange}
                   placeholder="MM/AA"
                   placeholderTextColor={colors.placeholder}
                   keyboardType="number-pad"

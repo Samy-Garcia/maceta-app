@@ -43,6 +43,12 @@ export function useEditCard(navigation, cardId) {
     setCardNumber(grouped);
   };
 
+  const handleExpiryChange = (text) => {
+    const digits = text.replace(/\D/g, '').slice(0, 4);
+    const formatted = digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
+    setExpiry(formatted);
+  };
+
   const rawDigits = cardNumber.replace(/\D/g, '');
   const previewLast4 = rawDigits.length >= 4 ? rawDigits.slice(-4) : existingLast4 || '••••';
   const previewBrand = rawDigits ? detectCardBrand(rawDigits) : 'Tarjeta';
@@ -111,7 +117,7 @@ export function useEditCard(navigation, cardId) {
     holder,
     setHolder,
     expiry,
-    setExpiry,
+    handleExpiryChange,
     cvv,
     setCvv,
     previewLast4,

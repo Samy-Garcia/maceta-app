@@ -6,6 +6,7 @@ import Button from '../components/Button.jsx';
 import ErrorText from '../components/ErrorText.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { useEditProfile } from '../hooks/useEditProfile.jsx';
+import { filterPhoneChars } from '../utils/validators.js';
 
 export default function EditProfileScreen({ navigation }) {
   const { colors } = useTheme();
@@ -68,10 +69,11 @@ export default function EditProfileScreen({ navigation }) {
         <TextInput
           style={styles.input}
           value={phone}
-          onChangeText={setPhone}
+          onChangeText={(text) => setPhone(filterPhoneChars(text))}
           placeholder="Ej. 503-7777-8888"
           placeholderTextColor={colors.placeholder}
           keyboardType="phone-pad"
+          maxLength={12}
         />
 
         <Text style={styles.label}>Correo electrónico</Text>

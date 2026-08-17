@@ -4,13 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar.jsx';
 import Button from '../components/Button.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
-
-// Pasos reales del pedido: el status que devuelve el backend justo después
-// del checkout siempre es "Pendiente" (recién confirmado), así que el
-// stepper normalmente arranca en el primer paso — no se inventan pasos ya
-// avanzados como haría un mockup genérico.
-const STEPS = ['Confirmado', 'En preparación', 'En camino', 'Entregado'];
-const STATUS_STEP = { Pendiente: 0, Aceptado: 1, 'En proceso': 2, Completo: 3 };
+import { STEPS, STATUS_STEP } from '../utils/orderStatus.js';
 
 export default function OrderConfirmedScreen({ navigation, route }) {
   const { colors } = useTheme();

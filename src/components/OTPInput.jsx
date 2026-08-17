@@ -8,13 +8,15 @@ export default function OTPInput({ length = 6, value, onChange }) {
   const styles = createStyles(colors);
   const inputRefs = useRef([]);
 
-  const handleChangeDigit = (digit, index) => {
+  const handleChangeDigit = (char, index) => {
+    // El backend genera códigos hexadecimales (0-9 y A-F), no solo dígitos
+    const clean = char.replace(/[^0-9a-fA-F]/g, '').toUpperCase();
     const digits = value.split('');
-    digits[index] = digit;
+    digits[index] = clean;
     const newValue = digits.join('').slice(0, length);
     onChange(newValue);
 
-    if (digit && index < length - 1) {
+    if (clean && index < length - 1) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -33,7 +35,8 @@ export default function OTPInput({ length = 6, value, onChange }) {
           ref={(ref) => (inputRefs.current[index] = ref)}
           style={styles.box}
           maxLength={1}
-          keyboardType="number-pad"
+          keyboardType="default"
+          autoCapitalize="characters"
           value={value[index] || ''}
           onChangeText={(digit) => handleChangeDigit(digit, index)}
           onKeyPress={(e) => handleKeyPress(e, index)}

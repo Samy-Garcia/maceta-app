@@ -10,6 +10,7 @@ export default function FormInput({
   secureTextEntry = false,
   keyboardType = 'default',
   autoCapitalize = 'none',
+  maxLength,
 }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -26,6 +27,7 @@ export default function FormInput({
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
+        maxLength={maxLength}
       />
     </View>
   );

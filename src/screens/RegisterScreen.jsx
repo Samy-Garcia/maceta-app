@@ -7,6 +7,7 @@ import Divider from '../components/Divider.jsx';
 import ErrorText from '../components/ErrorText.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { useRegister } from '../hooks/useRegister.jsx';
+import { filterPhoneChars } from '../utils/validators.js';
 
 export default function RegisterScreen({ navigation }) {
   const { colors } = useTheme();
@@ -36,8 +37,9 @@ export default function RegisterScreen({ navigation }) {
         label="Teléfono"
         placeholder="Ej. 503-7777-8888"
         value={phone}
-        onChangeText={setPhone}
+        onChangeText={(text) => setPhone(filterPhoneChars(text))}
         keyboardType="phone-pad"
+        maxLength={12}
       />
       <FormInput label="Dirección" placeholder="Ingresa Tu Dirección" value={address} onChangeText={setAddress} />
       <FormInput
