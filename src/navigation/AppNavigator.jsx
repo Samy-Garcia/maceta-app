@@ -26,6 +26,7 @@ import ManageCardsScreen from '../screens/ManageCardsScreen.jsx';
 import EditCardScreen from '../screens/EditCardScreen.jsx';
 import EditLocationScreen from '../screens/EditLocationScreen.jsx';
 import LoyaltyPointsScreen from '../screens/LoyaltyPointsScreen.jsx';
+import RedeemRewardsScreen from '../screens/RedeemRewardsScreen.jsx';
 
 const Stack = createNativeStackNavigator();
 
@@ -69,6 +70,7 @@ export default function AppNavigator() {
       <Stack.Screen name="EditCard" component={EditCardScreen} />
 
       <Stack.Screen name="LoyaltyPoints" component={LoyaltyPointsScreen} />
+      <Stack.Screen name="RedeemRewards" component={RedeemRewardsScreen} />
     </Stack.Navigator>
   );
 }

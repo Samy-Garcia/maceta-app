@@ -1,5 +1,7 @@
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import AuthCard from '../components/AuthCard.jsx';
+import AuthHeading from '../components/AuthHeading.jsx';
 import FormInput from '../components/FormInput.jsx';
 import Button from '../components/Button.jsx';
 import GoogleButton from '../components/GoogleButton.jsx';
@@ -14,9 +16,11 @@ export default function ForgotPasswordScreen({ navigation }) {
   const { email, setEmail, loading, error, handleSendCode, handleGoogleLogin } = useForgotPassword(navigation);
 
   return (
-    <AuthCard>
-      <Text style={styles.title}>Recuperar Contraseña</Text>
-      <Text style={styles.subtitle}>Ingrese Su Correo</Text>
+    <AuthCard scroll>
+      <AuthHeading
+        title="Recuperar Contraseña"
+        subtitle="Ingresa tu correo para recibir un código de restablecimiento seguro"
+      />
 
       <FormInput
         label="Correo Electrónico"
@@ -28,17 +32,26 @@ export default function ForgotPasswordScreen({ navigation }) {
 
       <ErrorText message={error} />
 
-      <Button label="Siguiente" onPress={handleSendCode} loading={loading} />
+      <Button label="Enviar Instrucciones" onPress={handleSendCode} loading={loading} />
 
       <Divider />
 
       <GoogleButton onPress={handleGoogleLogin} />
+
+      <TouchableOpacity
+        style={styles.backLink}
+        onPress={() => navigation.navigate('Login')}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="chevron-back" size={15} color={colors.text} />
+        <Text style={styles.backText}>Volver a Iniciar Sesión</Text>
+      </TouchableOpacity>
     </AuthCard>
   );
 }
 
 const createStyles = (colors) =>
   StyleSheet.create({
-    title: { fontSize: 22, fontWeight: '700', color: colors.text, marginTop: 12, textAlign: 'center' },
-    subtitle: { fontSize: 14, color: colors.placeholder, marginTop: 4, marginBottom: 20 },
+    backLink: { flexDirection: 'row', alignItems: 'center', marginTop: 18 },
+    backText: { fontSize: 13, color: colors.text, marginLeft: 2 },
   });

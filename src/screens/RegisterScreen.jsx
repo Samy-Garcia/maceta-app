@@ -1,5 +1,8 @@
-import { Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import AuthCard from '../components/AuthCard.jsx';
+import AuthHeading from '../components/AuthHeading.jsx';
 import FormInput from '../components/FormInput.jsx';
 import Button from '../components/Button.jsx';
 import GoogleButton from '../components/GoogleButton.jsx';
@@ -20,15 +23,18 @@ export default function RegisterScreen({ navigation }) {
     loading, error, handleRegister, goToLogin, handleGoogleRegister,
   } = useRegister(navigation);
 
+  // Solo controla el botón: la validación y el envío siguen viviendo en useRegister
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
   return (
     <AuthCard scroll>
-      <Text style={styles.title}>Crear Cuenta</Text>
+      <AuthHeading title="Crear Cuenta" subtitle="Únete al club de botánica artesanal de El Salvador" />
 
-      <FormInput label="Nombre" placeholder="Ingresa Tu Nombre" value={name} onChangeText={setName} />
-      <FormInput label="Apellido" placeholder="Ingresa Tu Apellido" value={lastName} onChangeText={setLastName} />
+      <FormInput label="Nombre" placeholder="Ingresa tu nombre" value={name} onChangeText={setName} />
+      <FormInput label="Apellido" placeholder="Ingresa tu apellido" value={lastName} onChangeText={setLastName} />
       <FormInput
         label="Correo Electrónico"
-        placeholder="Ingresa tu Correo Electrónico"
+        placeholder="ejemplo@correo.com"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -41,17 +47,17 @@ export default function RegisterScreen({ navigation }) {
         keyboardType="phone-pad"
         maxLength={12}
       />
-      <FormInput label="Dirección" placeholder="Ingresa Tu Dirección" value={address} onChangeText={setAddress} />
+      <FormInput label="Dirección" placeholder="Ingresa tu dirección" value={address} onChangeText={setAddress} />
       <FormInput
         label="Contraseña"
-        placeholder="Ingresa Tu Contraseña"
+        placeholder="Crea una contraseña segura"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
       <FormInput
         label="Confirmar Contraseña"
-        placeholder="Repite Tu Contraseña"
+        placeholder="Repite tu contraseña"
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         secureTextEntry
@@ -64,17 +70,36 @@ export default function RegisterScreen({ navigation }) {
         autoCapitalize="characters"
       />
 
+      <TouchableOpacity
+        style={styles.terms}
+        onPress={() => setAcceptedTerms((prev) => !prev)}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.checkbox, acceptedTerms && styles.checkboxOn]}>
+          {acceptedTerms ? <Ionicons name="checkmark" size={13} color={colors.white} /> : null}
+        </View>
+        <Text style={styles.termsText}>
+          Acepto los <Text style={styles.termsLink}>Términos y Condiciones</Text> y la{' '}
+          <Text style={styles.termsLink}>Política de Privacidad</Text>.
+        </Text>
+      </TouchableOpacity>
+
       <ErrorText message={error} />
 
-      <Button label="Crear Cuenta" onPress={handleRegister} loading={loading} />
+      <Button
+        label="Crear Cuenta"
+        onPress={handleRegister}
+        loading={loading}
+        disabled={!acceptedTerms}
+      />
 
       <Divider />
 
-      <GoogleButton onPress={handleGoogleRegister} label="Regístrate Con Google" />
+      <GoogleButton onPress={handleGoogleRegister} label="Registrarse con Google" />
 
-      <TouchableOpacity onPress={goToLogin} style={styles.registerLink}>
-        <Text style={styles.registerText}>
-          ¿Ya tienes cuenta? <Text style={styles.registerBold}>Iniciar Sesión</Text>
+      <TouchableOpacity onPress={goToLogin} style={styles.loginLink}>
+        <Text style={styles.loginText}>
+          ¿Ya tienes una cuenta? <Text style={styles.loginBold}>Iniciar Sesión</Text>
         </Text>
       </TouchableOpacity>
     </AuthCard>
@@ -83,8 +108,28 @@ export default function RegisterScreen({ navigation }) {
 
 const createStyles = (colors) =>
   StyleSheet.create({
-    title: { fontSize: 22, fontWeight: '700', color: colors.text, marginTop: 12, marginBottom: 20, textAlign: 'center' },
-    registerLink: { marginTop: 16 },
-    registerText: { fontSize: 13, color: colors.text },
-    registerBold: { color: colors.primary, fontWeight: '700' },
+    terms: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      width: '100%',
+      marginTop: 2,
+      marginBottom: 18,
+    },
+    checkbox: {
+      width: 18,
+      height: 18,
+      borderRadius: 5,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 10,
+      marginTop: 1,
+    },
+    checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+    termsText: { flex: 1, fontSize: 12.5, lineHeight: 18, color: colors.text },
+    termsLink: { color: colors.primary, fontWeight: '600', textDecorationLine: 'underline' },
+    loginLink: { marginTop: 18 },
+    loginText: { fontSize: 13, color: colors.placeholder },
+    loginBold: { color: colors.text, fontWeight: '700' },
   });

@@ -3,7 +3,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext.jsx';
 
 // Botón principal usado en todos los de autenticación
-export default function Button({ label, onPress, loading = false, disabled = false, icon }) {
+export default function Button({
+  label,
+  onPress,
+  loading = false,
+  disabled = false,
+  icon,
+  iconRight,
+}) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
 
@@ -20,6 +27,9 @@ export default function Button({ label, onPress, loading = false, disabled = fal
         <View style={styles.content}>
           {icon ? <Ionicons name={icon} size={16} color={colors.white} style={styles.icon} /> : null}
           <Text style={styles.label}>{label}</Text>
+          {iconRight ? (
+            <Ionicons name={iconRight} size={16} color={colors.white} style={styles.iconRight} />
+          ) : null}
         </View>
       )}
     </TouchableOpacity>
@@ -39,5 +49,6 @@ const createStyles = (colors) =>
     disabled: { opacity: 0.6 },
     content: { flexDirection: 'row', alignItems: 'center' },
     icon: { marginRight: 8 },
+    iconRight: { marginLeft: 8 },
     label: { color: colors.white, fontSize: 16, fontWeight: '700' },
   });
