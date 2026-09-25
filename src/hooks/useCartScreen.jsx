@@ -1,7 +1,7 @@
 import { Alert } from 'react-native';
 import { useCart } from '../context/CartContext.jsx';
+import { typeLabel } from '../utils/productTypes.js';
 
-const TYPE_LABELS = { maceta: 'Maceta', vela: 'Vela', planta: 'Planta' };
 
 // Pantalla del carrito: cantidades, eliminar y envío real (calculado en el
 // mapa de OpenStreetMap). El pago en sí (datos del cliente, cupón, checkout)
@@ -15,7 +15,7 @@ export function useCartScreen(navigation) {
   const shippingCost = shippingInfo?.shippingCost || 0;
   const total = Number((subtotal + shippingCost).toFixed(2));
 
-  const itemLabel = (item) => item.product?.dimensions || item.product?.size || TYPE_LABELS[item.productType];
+  const itemLabel = (item) => item.product?.dimensions || item.product?.size || typeLabel(item.productType);
 
   const changeQuantity = async (item, nextQuantity) => {
     if (nextQuantity < 1) return handleRemove(item);

@@ -13,6 +13,10 @@ import { apiFetch } from './api.js';
 export const fetchMacetas = () => apiFetch('/api/post');
 export const fetchVelas = () => apiFetch('/api/candles');
 export const fetchPlantas = () => apiFetch('/api/plants');
+// 'otro' es el tipo real del backend para el resto de piezas de concreto
+// (portavasos, etc.) y 'combo' son los sets que juntan varios productos.
+export const fetchOtros = () => apiFetch('/api/others');
+export const fetchCombos = () => apiFetch('/api/combos');
 export const fetchBestsellers = (limit = 12) => apiFetch(`/api/orders/bestsellers?limit=${limit}`);
 export const fetchOffers = () => apiFetch('/api/offers');
 export const fetchFavoriteIds = () => apiFetch('/api/wishlist/favorites');
@@ -22,5 +26,7 @@ const DETAIL_FETCHERS = {
   maceta: (id) => apiFetch(`/api/post/${id}`),
   vela: (id) => apiFetch(`/api/candles/${id}`),
   planta: (id) => apiFetch(`/api/plants/${id}`),
+  otro: (id) => apiFetch(`/api/others/${id}`),
+  combo: (id) => apiFetch(`/api/combos/${id}`),
 };
 export const fetchProductDetail = (productType, id) => DETAIL_FETCHERS[productType](id);

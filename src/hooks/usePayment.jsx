@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { apiFetch } from '../services/api.js';
 import { useCart } from '../context/CartContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { typeLabel } from '../utils/productTypes.js';
 
-const TYPE_LABELS = { maceta: 'Maceta', vela: 'Vela', planta: 'Planta' };
 
 // Pantalla de pago: datos del cliente, cupón real (de tus canjes de
 // lealtad) y confirmación del pedido. Sin pasarela de pago: el backend no
@@ -59,7 +59,7 @@ export function usePayment(navigation) {
   };
 
   const items = cart.products || [];
-  const itemLabel = (item) => TYPE_LABELS[item.productType];
+  const itemLabel = (item) => typeLabel(item.productType);
   const subtotal = cart.total || 0;
   const discount =
     appliedCoupon?.type === 'coupon' ? Number(((subtotal * appliedCoupon.discountPercent) / 100).toFixed(2)) : 0;

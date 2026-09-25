@@ -15,6 +15,7 @@ import WishlistScreen from '../screens/WishlistScreen.jsx';
 
 import ProductsScreen from '../screens/ProductsScreen.jsx';
 import ProductDetailScreen from '../screens/ProductDetailScreen.jsx';
+import CollectionScreen from '../screens/CollectionScreen.jsx';
 import CartScreen from '../screens/CartScreen.jsx';
 import PaymentScreen from '../screens/PaymentScreen.jsx';
 import OrderConfirmedScreen from '../screens/OrderConfirmedScreen.jsx';
@@ -49,6 +50,7 @@ export default function AppNavigator() {
 
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="Products" component={ProductsScreen} />
+      <Stack.Screen name="Collection" component={CollectionScreen} />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
 
       <Stack.Screen name="Wishlist" component={WishlistScreen} />

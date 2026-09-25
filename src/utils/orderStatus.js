@@ -9,6 +9,10 @@ export const STATUS_META = {
   Rechazado: { label: 'Rechazado', kind: 'rejected' },
 };
 
+// Un pedido sigue 'en curso' mientras no esté entregado ni rechazado
+export const ACTIVE_STATUSES = ['Pendiente', 'Aceptado', 'En proceso'];
+export const FINISHED_STATUSES = ['Completo', 'Rechazado'];
+
 export const STEPS = ['Confirmado', 'En preparación', 'En camino', 'Entregado'];
 export const STATUS_STEP = { Pendiente: 0, Aceptado: 1, 'En proceso': 2, Completo: 3 };
 

@@ -1,70 +1,147 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchBestsellers, fetchMacetas, fetchOffers, fetchPlantas, fetchVelas } from '../services/products.js';
+import {
+  fetchBestsellers,
+  fetchCombos,
+  fetchMacetas,
+  fetchOffers,
+  fetchOtros,
+  fetchPlantas,
+  fetchVelas,
+} from '../services/products.js';
 import { applyOffer, buildOffersMap, normalizeProduct } from '../utils/normalizeProduct.js';
 import { useProductActions } from './useProductActions.jsx';
 
+// Cada pestaña es un catálogo real del backend. "otro" es el tipo con el que
+// el backend guarda las demás piezas de concreto (hoy solo portavasos).
 export const PRODUCT_TABS = [
+  { key: 'todos', label: 'Todos' },
   { key: 'maceta', label: 'Macetas' },
   { key: 'vela', label: 'Velas' },
   { key: 'planta', label: 'Plantas' },
+  { key: 'otro', label: 'Portavasos' },
+  { key: 'combo', label: 'Combos' },
+  { key: 'ofertas', label: 'Ofertas' },
   { key: 'bestsellers', label: 'Más Vendidos' },
 ];
 
-const PAGE_SIZE = 4;
+// Solo ordenamientos que se pueden calcular con datos reales del producto
+export const SORT_OPTIONS = [
+  { key: 'default', label: 'Recomendados' },
+  { key: 'recent', label: 'Más recientes' },
+  { key: 'rating', label: 'Mejor calificados' },
+  { key: 'price-asc', label: 'Precio: menor a mayor' },
+  { key: 'price-desc', label: 'Precio: mayor a menor' },
+];
 
-// Puede recibir la etiqueta de un catálogo, o pedir favoritos y wishlist toggle,
-// se encarga de traer cada categoría real del backend, aplicar ofertas reales
-// y manejar la paginación "Cargar Más" (del lado del cliente: el backend no
-// pagina estos tres catálogos).
-export function useProducts() {
+const CATALOG_TYPES = ['maceta', 'vela', 'planta', 'otro', 'combo'];
+const PAGE_SIZE = 8;
+
+// Trae los cinco catálogos de una vez (son listas cortas y el backend no las
+// pagina) para poder mostrar el conteo real de cada pestaña y cambiar entre
+// ellas sin volver a pedir nada. Aplica las ofertas reales y maneja los
+// filtros y la paginación "Cargar más" del lado del cliente.
+export function useProducts(initial = {}) {
   const { favoriteIds, loadFavorites, toggleFavorite, addToCart } = useProductActions();
 
-  const [activeTab, setActiveTab] = useState('maceta');
-  const [query, setQuery] = useState('');
-  const [cache, setCache] = useState({});
-  const [loadingTab, setLoadingTab] = useState({});
-  const [errorTab, setErrorTab] = useState({});
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [activeTab, setActiveTab] = useState(initial.tab || 'todos');
+  const [query, setQuery] = useState(initial.query || '');
+  const [catalogs, setCatalogs] = useState({});
+  const [bestsellers, setBestsellers] = useState([]);
   const [offersMap, setOffersMap] = useState({});
-  const [sortOrder, setSortOrder] = useState('default'); // 'default' | 'price-asc' | 'price-desc'
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [sortOrder, setSortOrder] = useState('default');
 
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [sizeFilters, setSizeFilters] = useState(new Set());
   const [colorFilters, setColorFilters] = useState(new Set());
   const [priceRange, setPriceRange] = useState(null); // null = sin filtrar por precio
 
+  const load = useCallback(() => {
+    setLoading(true);
+    setError('');
+    Promise.all([
+      fetchMacetas(),
+      fetchVelas(),
+      fetchPlantas(),
+      fetchOtros(),
+      fetchCombos(),
+      fetchBestsellers().catch(() => []),
+      fetchOffers().catch(() => []),
+    ])
+      .then(([macetas, velas, plantas, otros, combos, topSellers, offers]) => {
+        setCatalogs({
+          maceta: (macetas || []).map((item) => normalizeProduct(item, 'maceta')),
+          vela: (velas || []).map((item) => normalizeProduct(item, 'vela')),
+          planta: (plantas || []).map((item) => normalizeProduct(item, 'planta')),
+          otro: (otros || []).map((item) => normalizeProduct(item, 'otro')),
+          combo: (combos || []).map((item) => normalizeProduct(item, 'combo')),
+        });
+        setBestsellers((topSellers || []).map((item) => normalizeProduct(item, item.productType)));
+        setOffersMap(buildOffersMap(offers || []));
+      })
+      .catch((err) => setError(err.message || 'No se pudieron cargar los productos.'))
+      .finally(() => setLoading(false));
+  }, []);
+
   useEffect(() => {
-    fetchOffers()
-      .then((offers) => setOffersMap(buildOffersMap(offers || [])))
-      .catch(() => {});
+    load();
     loadFavorites();
-  }, []);
+  }, [load]);
 
-  const loadTab = useCallback(async (tab) => {
-    setLoadingTab((prev) => ({ ...prev, [tab]: true }));
-    setErrorTab((prev) => ({ ...prev, [tab]: '' }));
-    try {
-      let items;
-      if (tab === 'bestsellers') {
-        const raw = await fetchBestsellers();
-        items = (raw || []).map((item) => normalizeProduct(item, item.productType));
-      } else {
-        const fetcher = { maceta: fetchMacetas, vela: fetchVelas, planta: fetchPlantas }[tab];
-        const raw = await fetcher();
-        items = (raw || []).map((item) => normalizeProduct(item, tab));
-      }
-      setCache((prev) => ({ ...prev, [tab]: items }));
-    } catch (err) {
-      setErrorTab((prev) => ({ ...prev, [tab]: err.message || 'No se pudieron cargar los productos.' }));
-    } finally {
-      setLoadingTab((prev) => ({ ...prev, [tab]: false }));
-    }
-  }, []);
+  // Todo el catálogo ya con su oferta real aplicada
+  const allProducts = useMemo(
+    () =>
+      CATALOG_TYPES.flatMap((type) => catalogs[type] || []).map((item) => applyOffer(item, offersMap)),
+    [catalogs, offersMap]
+  );
 
-  useEffect(() => {
-    if (!cache[activeTab]) loadTab(activeTab);
-  }, [activeTab, cache, loadTab]);
+  const offerProducts = useMemo(
+    () => allProducts.filter((item) => item.discountedPrice != null),
+    [allProducts]
+  );
 
+  const itemsOfTab = useCallback(
+    (tab) => {
+      if (tab === 'todos') return allProducts;
+      if (tab === 'ofertas') return offerProducts;
+      if (tab === 'bestsellers') return bestsellers.map((item) => applyOffer(item, offersMap));
+      return (catalogs[tab] || []).map((item) => applyOffer(item, offersMap));
+    },
+    [allProducts, offerProducts, bestsellers, catalogs, offersMap]
+  );
+
+  // Conteo real de cada pestaña, para mostrarlo junto a su nombre
+  const counts = useMemo(() => {
+    const result = {};
+    PRODUCT_TABS.forEach((tab) => {
+      result[tab.key] = itemsOfTab(tab.key).length;
+    });
+    return result;
+  }, [itemsOfTab]);
+
+  // Portadas de las colecciones: la imagen sale del primer producto real de
+  // cada grupo y el conteo es el que tiene el catálogo ahora mismo.
+  const collections = useMemo(() => {
+    const cover = (list) => list.find((item) => item.image)?.image || null;
+    const maxDiscount = Math.max(0, ...offerProducts.map((item) => item.discountPercentage || 0));
+    return [
+      { key: 'maceta', title: 'Macetas', note: counts.maceta + ' modelos' },
+      { key: 'vela', title: 'Velas', note: counts.vela + ' piezas' },
+      { key: 'planta', title: 'Plantas', note: counts.planta + ' piezas' },
+      { key: 'otro', title: 'Portavasos', note: counts.otro + ' piezas' },
+      {
+        key: 'ofertas',
+        title: 'Ofertas',
+        tag: 'ESPECIAL',
+        note: maxDiscount > 0 ? 'Hasta ' + maxDiscount + '% OFF' : counts.ofertas + ' piezas',
+      },
+      { key: 'combo', title: 'Combos', tag: 'SETS DE AUTOR', note: counts.combo + ' sets' },
+    ]
+      .filter((collection) => counts[collection.key] > 0)
+      .map((collection) => ({ ...collection, image: cover(itemsOfTab(collection.key)) }));
+  }, [counts, itemsOfTab, offerProducts]);
   const changeTab = (tab) => {
     setActiveTab(tab);
     setVisibleCount(PAGE_SIZE);
@@ -73,7 +150,7 @@ export function useProducts() {
     setPriceRange(null);
   };
 
-  const rawItems = cache[activeTab] || [];
+  const rawItems = itemsOfTab(activeTab);
 
   // Opciones de filtro reales: solo se muestran tamaños/colores que de
   // verdad tiene al menos un producto de esta categoría — nada de listas
@@ -86,7 +163,9 @@ export function useProducts() {
 
   const availableColors = useMemo(() => {
     const map = new Map();
-    rawItems.forEach((item) => item.colorOptions?.forEach((c) => c?.name && !map.has(c.name) && map.set(c.name, c.hex)));
+    rawItems.forEach((item) =>
+      item.colorOptions?.forEach((c) => c?.name && !map.has(c.name) && map.set(c.name, c.hex))
+    );
     return Array.from(map.entries()).map(([name, hex]) => ({ name, hex }));
   }, [rawItems]);
 
@@ -96,7 +175,7 @@ export function useProducts() {
   }, [rawItems]);
 
   const items = useMemo(() => {
-    let list = rawItems.map((item) => applyOffer(item, offersMap));
+    let list = rawItems;
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       list = list.filter((item) => item.name?.toLowerCase().includes(q));
@@ -116,8 +195,12 @@ export function useProducts() {
     const priceOf = (item) => item.discountedPrice ?? item.price;
     if (sortOrder === 'price-asc') list = [...list].sort((a, b) => priceOf(a) - priceOf(b));
     if (sortOrder === 'price-desc') list = [...list].sort((a, b) => priceOf(b) - priceOf(a));
+    if (sortOrder === 'rating') list = [...list].sort((a, b) => b.rating - a.rating);
+    if (sortOrder === 'recent') {
+      list = [...list].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    }
     return list;
-  }, [rawItems, offersMap, query, sortOrder, sizeFilters, colorFilters, priceRange]);
+  }, [rawItems, query, sortOrder, sizeFilters, colorFilters, priceRange]);
 
   const visibleItems = items.slice(0, visibleCount);
   const hasMore = visibleCount < items.length;
@@ -141,6 +224,11 @@ export function useProducts() {
     setVisibleCount(PAGE_SIZE);
   };
 
+  const clearSizeFilters = () => {
+    setSizeFilters(new Set());
+    setVisibleCount(PAGE_SIZE);
+  };
+
   const resetFilters = () => {
     setSizeFilters(new Set());
     setColorFilters(new Set());
@@ -153,15 +241,18 @@ export function useProducts() {
 
   return {
     tabs: PRODUCT_TABS,
+    collections,
+    sortOptions: SORT_OPTIONS,
+    counts,
     activeTab,
     changeTab,
     query,
     setQuery,
     items: visibleItems,
     totalCount: items.length,
-    loading: !!loadingTab[activeTab] && !cache[activeTab],
-    error: errorTab[activeTab],
-    retry: () => loadTab(activeTab),
+    loading,
+    error,
+    retry: load,
     hasMore,
     loadMore,
     favoriteIds,
@@ -174,6 +265,7 @@ export function useProducts() {
     availableSizes,
     sizeFilters,
     toggleSizeFilter,
+    clearSizeFilters,
     availableColors,
     colorFilters,
     toggleColorFilter,

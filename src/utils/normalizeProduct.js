@@ -1,7 +1,8 @@
 const NEW_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // 14 días
 
-// Los tres catálogos (Post=maceta, Candle=vela, Plant=planta) tienen campos
-// distintos; esto los reduce a la forma común que usa la grilla de productos.
+// Los cinco catálogos (Post=maceta, Candle=vela, Plant=planta, Other=otro,
+// Combo=combo) tienen campos distintos; esto los reduce a la forma común que
+// usa la grilla de productos.
 export function normalizeProduct(item, productType) {
   return {
     id: item._id,
@@ -10,12 +11,19 @@ export function normalizeProduct(item, productType) {
     price: item.price,
     stock: item.stock,
     dimensions: item.dimensions || item.size || '',
+    // Las plantas guardan su texto en 'care' en vez de 'description'
+    description: item.description || item.care || '',
     productType,
     createdAt: item.createdAt,
     sold: item.sold,
+    // El backend ya calcula la calificación real de cada producto
+    rating: item.rating ?? 0,
+    reviewCount: item.reviewCount ?? 0,
     // variantes reales que ofrece el producto (para los filtros de Tamaño/Color)
     sizes: item.sizes?.length ? item.sizes : [item.size].filter(Boolean),
     colorOptions: item.colorOptions || [],
+    // Solo los combos: los productos que trae el set
+    items: item.items || [],
   };
 }
 

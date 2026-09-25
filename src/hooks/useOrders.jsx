@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import { fetchMyOrders } from '../services/orders.js';
-import { getStatusMeta, summarizeItems } from '../utils/orderStatus.js';
+import { ACTIVE_STATUSES, FINISHED_STATUSES, getStatusMeta, summarizeItems } from '../utils/orderStatus.js';
 import { useCart } from '../context/CartContext.jsx';
 
 const TABS = [
@@ -9,9 +9,6 @@ const TABS = [
   { key: 'activos', label: 'Activos' },
   { key: 'completados', label: 'Completados' },
 ];
-
-const ACTIVE_STATUSES = ['Pendiente', 'Aceptado', 'En proceso'];
-const FINISHED_STATUSES = ['Completo', 'Rechazado'];
 
 // Historial real de pedidos (todo lo que ya no está "activo" en el carrito).
 export function useOrders(navigation) {
