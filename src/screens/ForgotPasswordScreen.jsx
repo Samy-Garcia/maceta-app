@@ -13,7 +13,8 @@ import { useForgotPassword } from '../hooks/useForgotPassword.jsx';
 export default function ForgotPasswordScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const { email, setEmail, loading, error, handleSendCode, handleGoogleLogin } = useForgotPassword(navigation);
+  const { email, setEmail, loading, error, handleSendCode, handleGoogleLogin, googleLoading } =
+    useForgotPassword(navigation);
 
   return (
     <AuthCard scroll>
@@ -36,7 +37,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
       <Divider />
 
-      <GoogleButton onPress={handleGoogleLogin} />
+      <GoogleButton onPress={handleGoogleLogin} loading={googleLoading} />
 
       <TouchableOpacity
         style={styles.backLink}

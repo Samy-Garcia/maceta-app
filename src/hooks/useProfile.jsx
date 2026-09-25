@@ -1,17 +1,18 @@
 import { useCallback, useState } from 'react';
-import { Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { useActiveOrders } from './useActiveOrders.jsx';
 import { getCards } from '../services/cardsStorage.js';
 import { fetchMyLoyalty } from '../services/loyalty.js';
+import { useToast } from '../context/ToastContext.jsx';
 
 // Perfil: resume lo que el cliente ya tiene guardado (tarjetas del
 // dispositivo, direcciones reales de la cuenta, pedidos en curso y hojas de
 // lealtad) y lleva a la pantalla que administra cada cosa.
 export function useProfile(navigation) {
   const { user, logout } = useAuth();
+  const toast = useToast();
   const { isDark, toggleTheme } = useTheme();
   const activeOrders = useActiveOrders();
 
@@ -35,27 +36,27 @@ export function useProfile(navigation) {
   const addresses = user?.addresses || [];
   // La predeterminada es la que manda el backend; si ninguna lo está, la primera
   const defaultAddress = addresses.find((address) => address.isDefault) || addresses[0] || null;
-  const defaultCard = cards[0] || null;
+  const defaultCard = cards.find((card) => card.isDefault) || cards[0] || null;
 
   const go = (route, params) => () => navigation.navigate(route, params);
 
-  const handleLogout = () => {
-    Alert.alert('Cerrar sesión', '¿Seguro que quieres cerrar tu sesión?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Cerrar sesión',
-        style: 'destructive',
-        onPress: async () => {
-          setLoggingOut(true);
-          try {
-            await logout();
-            navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
-          } finally {
-            setLoggingOut(false);
-          }
-        },
-      },
-    ]);
+  const handleLogout = async () => {
+    const ok = await toast.confirm({
+      title: 'Cerrar sesión',
+      message: '¿Seguro que quieres cerrar tu sesión?',
+      confirmLabel: 'Cerrar sesión',
+      icon: 'log-out-outline',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    setLoggingOut(true);
+    try {
+      await logout();
+      navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   return {
@@ -80,6 +81,7 @@ export function useProfile(navigation) {
     goToOrders: go('Orders'),
     goToWishlist: go('Wishlist'),
     goToLoyalty: go('LoyaltyPoints'),
+    goToNotifications: go('NotificationPreferences'),
     goToSecurity: go('ForgotPassword'),
     handleLogout,
   };

@@ -1,12 +1,13 @@
 import { useCallback, useState } from 'react';
-import { Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getCards, saveCards } from '../services/cardsStorage.js';
+import { getCards, saveCards, withSingleDefault } from '../services/cardsStorage.js';
+import { useToast } from '../context/ToastContext.jsx';
 
 // lista de tarjetas guardadas (persistidas en el dispositivo con AsyncStorage)
 export function useManageCards(navigation) {
   const { user } = useAuth();
+  const toast = useToast();
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,20 +27,28 @@ export function useManageCards(navigation) {
   const goToAddCard = () => navigation.navigate('EditCard');
   const goToEditCard = (card) => navigation.navigate('EditCard', { cardId: card.id });
 
-  const handleDelete = (card) => {
-    Alert.alert('Eliminar tarjeta', `¿Eliminar la tarjeta terminada en ${card.last4}?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
-          const next = cards.filter((c) => c.id !== card.id);
-          setCards(next);
-          await saveCards(user?.email, next);
-        },
-      },
-    ]);
+  const handleDelete = async (card) => {
+    const ok = await toast.confirm({
+      title: 'Eliminar tarjeta',
+      message: '¿Eliminar la tarjeta terminada en ' + card.last4 + '?',
+      confirmLabel: 'Eliminar',
+      icon: 'trash-outline',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    const next = withSingleDefault(cards.filter((c) => c.id !== card.id));
+    setCards(next);
+    await saveCards(user?.email, next);
+    toast.success('Tarjeta eliminada');
   };
 
-  return { cards, loading, goToAddCard, goToEditCard, handleDelete };
+  // Cambiar cuál es la tarjeta principal (la que Perfil y el carrito muestran)
+  const setDefaultCard = async (card) => {
+    const next = withSingleDefault(cards, card.id);
+    setCards(next);
+    await saveCards(user?.email, next);
+  };
+
+  return { cards, loading, goToAddCard, goToEditCard, handleDelete, setDefaultCard };
 }

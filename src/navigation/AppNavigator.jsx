@@ -22,6 +22,8 @@ import OrderConfirmedScreen from '../screens/OrderConfirmedScreen.jsx';
 import ProfileScreen from '../screens/ProfileScreen.jsx';
 import EditProfileScreen from '../screens/EditProfileScreen.jsx';
 import OrdersScreen from '../screens/OrdersScreen.jsx';
+import NotificationsScreen from '../screens/NotificationsScreen.jsx';
+import NotificationPreferencesScreen from '../screens/NotificationPreferencesScreen.jsx';
 import OrderDetailScreen from '../screens/OrderDetailScreen.jsx';
 import ManageCardsScreen from '../screens/ManageCardsScreen.jsx';
 import EditCardScreen from '../screens/EditCardScreen.jsx';
@@ -66,6 +68,8 @@ export default function AppNavigator() {
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="Orders" component={OrdersScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} />
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
 
       <Stack.Screen name="ManageCards" component={ManageCardsScreen} />

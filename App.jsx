@@ -5,6 +5,7 @@ import AppNavigator from './src/navigation/AppNavigator.jsx';
 import { AuthProvider } from './src/context/AuthContext.jsx';
 import { CartProvider } from './src/context/CartContext.jsx';
 import { ThemeProvider } from './src/theme/ThemeContext.jsx';
+import { ToastProvider } from './src/context/ToastContext.jsx';
 
 export default function App() {
   return (
@@ -12,10 +13,12 @@ export default function App() {
       <SafeAreaProvider>
         <AuthProvider>
           <CartProvider>
-            <NavigationContainer>
-              <StatusBar style="light" />
-              <AppNavigator />
-            </NavigationContainer>
+            <ToastProvider>
+              <NavigationContainer>
+                <StatusBar style="light" />
+                <AppNavigator />
+              </NavigationContainer>
+            </ToastProvider>
           </CartProvider>
         </AuthProvider>
       </SafeAreaProvider>

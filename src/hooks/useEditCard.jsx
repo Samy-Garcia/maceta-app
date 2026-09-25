@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getCards, saveCards } from '../services/cardsStorage.js';
+import { getCards, saveCards, withSingleDefault } from '../services/cardsStorage.js';
 import { detectCardBrand } from '../utils/cardBrand.js';
+import { useToast } from '../context/ToastContext.jsx';
 
 const EXPIRY_REGEX = /^(0[1-9]|1[0-2])\/\d{2}$/;
 
@@ -12,11 +12,13 @@ const EXPIRY_REGEX = /^(0[1-9]|1[0-2])\/\d{2}$/;
 // titular y vencimiento (ver cardsStorage.js).
 export function useEditCard(navigation, cardId) {
   const { user } = useAuth();
+  const toast = useToast();
   const [cardNumber, setCardNumber] = useState('');
   const [holder, setHolder] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
   const [existingLast4, setExistingLast4] = useState('');
+  const [isDefault, setIsDefault] = useState(true);
   const [loading, setLoading] = useState(!!cardId);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -30,6 +32,7 @@ export function useEditCard(navigation, cardId) {
         setHolder(existing.holder);
         setExpiry(existing.expiry);
         setExistingLast4(existing.last4);
+        setIsDefault(!!existing.isDefault);
         setCardNumber(`•••• •••• •••• ${existing.last4}`);
       }
       setLoading(false);
@@ -83,14 +86,19 @@ export function useEditCard(navigation, cardId) {
         holder: holder.trim(),
         expiry: expiry.trim(),
       };
+      const newId = Date.now().toString();
       const next = cardId
         ? cards.map((c) => (c.id === cardId ? { ...c, ...cardData } : c))
-        : [...cards, { id: Date.now().toString(), ...cardData }];
+        : [...cards, { id: newId, ...cardData }];
+      // La primera tarjeta siempre queda como principal; después manda el switch
+      const withDefault = withSingleDefault(next, isDefault ? cardId || newId : undefined);
 
-      await saveCards(user?.email, next);
-      Alert.alert(cardId ? 'Tarjeta actualizada' : 'Tarjeta agregada', undefined, [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      await saveCards(user?.email, withDefault);
+      toast.success(
+        cardId ? 'Tarjeta actualizada' : 'Tarjeta guardada',
+        cardData.label + ' terminada en ' + cardData.last4
+      );
+      navigation.goBack();
     } catch {
       setError('No se pudo guardar la tarjeta.');
     } finally {
@@ -98,19 +106,20 @@ export function useEditCard(navigation, cardId) {
     }
   };
 
-  const handleDelete = () => {
-    Alert.alert('Eliminar tarjeta', '¿Seguro que quieres eliminar esta tarjeta?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
-          const cards = await getCards(user?.email);
-          await saveCards(user?.email, cards.filter((c) => c.id !== cardId));
-          navigation.goBack();
-        },
-      },
-    ]);
+  const handleDelete = async () => {
+    const ok = await toast.confirm({
+      title: 'Eliminar tarjeta',
+      message: '¿Seguro que quieres eliminar esta tarjeta?',
+      confirmLabel: 'Eliminar',
+      icon: 'trash-outline',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    const cards = await getCards(user?.email);
+    await saveCards(user?.email, withSingleDefault(cards.filter((c) => c.id !== cardId)));
+    toast.success('Tarjeta eliminada');
+    navigation.goBack();
   };
 
   return {
@@ -122,6 +131,8 @@ export function useEditCard(navigation, cardId) {
     handleExpiryChange,
     cvv,
     setCvv,
+    isDefault,
+    setIsDefault,
     previewLast4,
     previewBrand,
     loading,

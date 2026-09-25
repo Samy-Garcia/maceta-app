@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Alert } from 'react-native';
 import { fetchRoute, fetchStoreConfig, parseNominatimAddress, reverseGeocode } from '../services/shipping.js';
 import { addAddress } from '../services/addresses.js';
 import { saveAddressCoords } from '../services/addressCoords.js';
 import { useCart } from '../context/CartContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 
 // Tienda por defecto mientras carga la configuración real (mismo respaldo que usa la web)
 const DEFAULT_STORE = { lat: 13.6929, lng: -89.2182 };
@@ -25,6 +25,7 @@ const coordsLabel = (coords) => `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(
 export function useShippingMap(navigation, returnTo = 'Cart') {
   const { cart, setShippingInfo } = useCart();
   const { user, refreshUser } = useAuth();
+  const toast = useToast();
   const [store, setStore] = useState(DEFAULT_STORE);
   const [shippingConfig, setShippingConfig] = useState({
     pricePerKm: 0,
@@ -156,25 +157,20 @@ export function useShippingMap(navigation, returnTo = 'Cart') {
   // sin explicar por qué. Ahora siempre da una razón concreta al tocarlo.
   const confirm = async () => {
     if (!selected) {
-      Alert.alert(
-        'Falta marcar tu ubicación',
-        'Toca el mapa (o busca tu dirección) para marcar dónde quieres tu envío.'
-      );
+      toast.warning('Falta marcar tu ubicación', 'Toca el mapa o busca tu dirección para marcar dónde quieres el envío.');
       return;
     }
     if (loading) {
-      Alert.alert('Un momento', 'Todavía se está calculando la ruta hacia ese punto.');
+      toast.info('Un momento', 'Todavía se está calculando la ruta hacia ese punto.');
       return;
     }
     if (!route) {
-      Alert.alert(
+      toast.error(
         'No se pudo calcular la ruta',
-        error ||
-          'No se pudo calcular la ruta hasta ese punto. Intenta marcar otro lugar más cercano a una calle.'
+        error || 'Intenta marcar otro lugar más cercano a una calle.'
       );
       return;
     }
-
     setShippingInfo({
       address,
       municipality: addressDetails?.municipality || '',

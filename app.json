@@ -36,7 +36,10 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
-    ]
+      ],
+      "expo-web-browser",
+      "@react-native-community/datetimepicker"
+    ],
+    "scheme": "macetas503"
   }
 }

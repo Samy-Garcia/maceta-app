@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import {
   claimBirthdayBonus,
   fetchMyLoyalty,
@@ -9,10 +8,12 @@ import {
 } from '../services/loyalty.js';
 import { fetchOffers } from '../services/products.js';
 import { hojasToUsd, LOYALTY_TIERS, resolveTier } from '../utils/loyaltyTiers.js';
+import { useToast } from '../context/ToastContext.jsx';
 
 // Puntos de lealtad reales ("hojas"): saldo, historial, código de referido,
 // bono de cumpleaños y catálogo de recompensas — todo viene del backend.
 export function useLoyalty() {
+  const toast = useToast();
   const [loyalty, setLoyalty] = useState(null);
   const [rewards, setRewards] = useState([]);
   const [offers, setOffers] = useState([]);
@@ -62,10 +63,10 @@ export function useLoyalty() {
     setClaiming(true);
     try {
       const res = await claimBirthdayBonus();
-      Alert.alert('¡Feliz cumpleaños!', res.message || 'Se agregaron tus hojas de regalo.');
+      toast.success('¡Feliz cumpleaños!', res.message || 'Se agregaron tus hojas de regalo.');
       load();
     } catch (err) {
-      Alert.alert('No se pudo reclamar', err.message || 'Intenta de nuevo más tarde.');
+      toast.error('No se pudo reclamar', err.message || 'Intenta de nuevo más tarde.');
     } finally {
       setClaiming(false);
     }
@@ -74,32 +75,36 @@ export function useLoyalty() {
   const handleRedeem = async (reward) => {
     if (reward.redeemed) return;
     if ((loyalty?.points || 0) < reward.cost) {
-      Alert.alert('Hojas insuficientes', `Necesitas ${reward.cost} hojas para canjear "${reward.title}".`);
+      toast.warning('Hojas insuficientes', 'Necesitas ' + reward.cost + ' hojas para canjear "' + reward.title + '".');
       return;
     }
-    Alert.alert('Canjear recompensa', `¿Canjear "${reward.title}" por ${reward.cost} hojas?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Canjear',
-        onPress: async () => {
-          setRedeemingId(reward.id);
-          try {
-            const redemption = await redeemReward(reward.id);
-            Alert.alert(
-              '¡Canjeado!',
-              redemption.code
-                ? `Tu código es ${redemption.code}. Úsalo al confirmar tu pedido.`
-                : 'Tu recompensa fue canjeada correctamente.'
-            );
-            load();
-          } catch (err) {
-            Alert.alert('Error', err.message || 'No se pudo canjear la recompensa.');
-          } finally {
-            setRedeemingId(null);
-          }
-        },
-      },
-    ]);
+    const ok = await toast.confirm({
+      title: 'Canjear recompensa',
+      message: '¿Canjear "' + reward.title + '" por ' + reward.cost + ' hojas?',
+      confirmLabel: 'Canjear',
+      icon: 'gift-outline',
+    });
+    if (!ok) return;
+
+    setRedeemingId(reward.id);
+    try {
+      const redemption = await redeemReward(reward.id);
+      if (redemption.code) {
+        await toast.alert({
+          title: '¡Canjeado!',
+          message: 'Tu código es ' + redemption.code + '. Úsalo al confirmar tu pedido.',
+          icon: 'gift',
+          confirmLabel: 'Entendido',
+        });
+      } else {
+        toast.success('¡Canjeado!', 'Tu recompensa fue canjeada correctamente.');
+      }
+      load();
+    } catch (err) {
+      toast.error('No se pudo canjear', err.message || 'No se pudo canjear la recompensa.');
+    } finally {
+      setRedeemingId(null);
+    }
   };
 
   return {

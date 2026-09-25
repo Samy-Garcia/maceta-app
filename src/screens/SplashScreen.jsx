@@ -31,7 +31,6 @@ export default function SplashScreen({ navigation }) {
             <View style={styles.dot} />
             <Text style={styles.topLabel}>EL SALVADOR</Text>
           </View>
-          <Text style={styles.editionLabel}>EDICIÓN 2025</Text>
         </View>
 
         <View style={styles.hero}>
@@ -51,11 +50,10 @@ export default function SplashScreen({ navigation }) {
 
           <View style={styles.tagRow}>
             <View style={styles.tagLine} />
-            <Text style={styles.tagText}>BOUTIQUE BOTÁNICA</Text>
+            <Text style={styles.tagText}>BOTÁNICA</Text>
             <View style={styles.tagLine} />
           </View>
 
-          <Text style={styles.subtitle}>Botánica & Arte en Cerámica</Text>
         </View>
 
         <View style={styles.actions}>
@@ -111,15 +109,12 @@ const createStyles = (colors, isDark) => {
       fontWeight: '700',
       color: brandGreen,
     },
-    editionLabel: {
-      fontSize: 11,
-      letterSpacing: 2.4,
-      fontWeight: '600',
-      color: softGreen,
-    },
 
     hero: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    logoWrap: { alignItems: 'center', justifyContent: 'center', marginBottom: 26 },
+    // El halo mide 260 y el logo 150: el círculo sobresale 55px por debajo,
+    // así que el margen debe pasar de eso para que se vea aire entre el
+    // círculo y las letras (110 - 55 = 55px de separación real).
+    logoWrap: { alignItems: 'center', justifyContent: 'center', marginBottom: 110 },
     glowOuter: {
       position: 'absolute',
       width: 260,
@@ -150,7 +145,7 @@ const createStyles = (colors, isDark) => {
       color: softGreen,
     },
 
-    tagRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
+    tagRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20 },
     tagLine: { width: 26, height: 1, backgroundColor: hairline },
     tagText: {
       fontSize: 12,
@@ -158,12 +153,6 @@ const createStyles = (colors, isDark) => {
       fontWeight: '700',
       color: brandGreen,
       marginHorizontal: 12,
-    },
-    subtitle: {
-      marginTop: 22,
-      fontSize: 17,
-      color: isDark ? colors.text : '#33403A',
-      textAlign: 'center',
     },
 
     actions: { paddingBottom: 12 },

@@ -1,6 +1,5 @@
 import {
   ActivityIndicator,
-  Image,
   ScrollView,
   StyleSheet,
   Switch,
@@ -11,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar.jsx';
+import Avatar from '../components/Avatar.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { SERIF } from '../theme/typography.js';
 import { useProfile } from '../hooks/useProfile.jsx';
@@ -25,7 +25,7 @@ export default function ProfileScreen({ navigation }) {
     activeOrders, loyaltyPoints, loggingOut,
     goToEditProfile, goToCards, goToAddCard, goToEditCard,
     goToAddresses, goToAddAddress, goToEditAddress,
-    goToOrders, goToWishlist, goToLoyalty, goToSecurity, handleLogout,
+    goToOrders, goToWishlist, goToLoyalty, goToNotifications, goToSecurity, handleLogout,
   } = useProfile(navigation);
 
   const links = [
@@ -71,15 +71,7 @@ export default function ProfileScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.profileCard}>
           <View style={styles.avatarWrapper}>
-            {user?.photo ? (
-              <Image source={{ uri: user.photo }} style={styles.avatarImage} />
-            ) : (
-              <Image
-                source={require('../../assets/logo.png')}
-                style={styles.avatarLogo}
-                resizeMode="contain"
-              />
-            )}
+            <Avatar size={88} />
             <View style={styles.avatarBadge}>
               <Ionicons name="leaf" size={12} color={colors.white} />
             </View>
@@ -254,6 +246,20 @@ export default function ProfileScreen({ navigation }) {
 
           <TouchableOpacity
             style={[styles.row, styles.rowDivider]}
+            onPress={goToNotifications}
+            activeOpacity={0.7}
+          >
+            <View style={styles.rowIcon}>
+              <Ionicons name="notifications-outline" size={18} color={colors.primary} />
+            </View>
+            <View style={styles.rowTexts}>
+              <Text style={styles.rowLabel}>Notificaciones</Text>
+              <Text style={styles.rowNote}>Qué avisos quieres recibir</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={17} color={colors.placeholder} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.row, styles.rowDivider]}
             onPress={goToSecurity}
             activeOpacity={0.7}
           >
@@ -331,14 +337,9 @@ const createStyles = (colors, isDark) =>
     avatarWrapper: {
       width: 88,
       height: 88,
-      borderRadius: 44,
-      backgroundColor: colors.primarySoft,
       alignItems: 'center',
       justifyContent: 'center',
-      overflow: 'visible',
     },
-    avatarImage: { width: '100%', height: '100%', borderRadius: 44 },
-    avatarLogo: { width: 52, height: 52 },
     avatarBadge: {
       position: 'absolute',
       right: 0,

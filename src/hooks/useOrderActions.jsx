@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import { createReview } from '../services/reviews.js';
 import { useCart } from '../context/CartContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 
 // Acciones sobre un pedido concreto (repetirlo y reseñarlo). Vive aparte de
 // useOrders para que el detalle no tenga que recargar todo el historial.
 export function useOrderActions(navigation) {
   const { addToCart, refreshCart } = useCart();
+  const toast = useToast();
   const [reordering, setReordering] = useState(null);
   const [reviewOrder, setReviewOrder] = useState(null);
   const [savingReview, setSavingReview] = useState(false);
@@ -19,14 +20,14 @@ export function useOrderActions(navigation) {
         await addToCart(item.product._id, item.productType, item.quantity);
       }
       await refreshCart();
-      Alert.alert('Listo', 'Agregamos los productos de ese pedido a tu carrito.', [
-        { text: 'Ver carrito', onPress: () => navigation.navigate('Cart') },
-        { text: 'OK', style: 'cancel' },
-      ]);
+      toast.success('Pedido agregado', 'Los productos de ese pedido están en tu carrito.', {
+        actionLabel: 'Ver carrito',
+        onAction: () => navigation.navigate('Cart'),
+      });
     } catch (err) {
-      Alert.alert(
-        'Error',
-        err.message || 'No se pudo repetir el pedido (puede que algún producto ya no tenga stock).'
+      toast.error(
+        'No se pudo repetir el pedido',
+        err.message || 'Puede que algún producto ya no tenga stock.'
       );
     } finally {
       setReordering(null);
@@ -47,9 +48,9 @@ export function useOrderActions(navigation) {
         comment: comment.trim(),
       });
       setReviewOrder(null);
-      Alert.alert('Gracias', 'Tu reseña se publicó correctamente.');
+      toast.success('¡Gracias!', 'Tu reseña se publicó correctamente.');
     } catch (err) {
-      Alert.alert('No se pudo publicar', err.message || 'Intenta de nuevo más tarde.');
+      toast.error('No se pudo publicar', err.message || 'Intenta de nuevo más tarde.');
     } finally {
       setSavingReview(false);
     }

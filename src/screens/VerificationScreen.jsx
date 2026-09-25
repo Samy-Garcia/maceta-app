@@ -22,7 +22,7 @@ const formatSeconds = (total) => {
 export default function VerificationScreen({ navigation, route }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const { code, setCode, loading, error, handleVerifyCode, handleGoogleLogin, email } = useVerification(
+  const { code, setCode, loading, error, handleVerifyCode, handleGoogleLogin, googleLoading, email } = useVerification(
     navigation,
     route?.params
   );
@@ -68,7 +68,7 @@ export default function VerificationScreen({ navigation, route }) {
 
       <Divider />
 
-      <GoogleButton onPress={handleGoogleLogin} />
+      <GoogleButton onPress={handleGoogleLogin} loading={googleLoading} />
 
       <TouchableOpacity
         style={styles.backLink}

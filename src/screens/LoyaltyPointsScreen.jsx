@@ -1,13 +1,16 @@
 import { useRef } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar.jsx';
+import CopyableCode from '../components/CopyableCode.jsx';
+import { daysUntilBirthday, formatBirthDay, readBirthDate } from '../utils/birthDate.js';
 import Button from '../components/Button.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useLoyalty } from '../hooks/useLoyalty.jsx';
 import { tierIcon } from '../utils/loyaltyTiers.js';
+import { useToast } from '../context/ToastContext.jsx';
 
 // Tonos de marca que no dependen del tema (van sobre el verde oscuro de la tarjeta)
 const GOLD = '#F3D89B';
@@ -38,7 +41,10 @@ const EARN_RULES = [
 export default function LoyaltyPointsScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const toast = useToast();
   const { user } = useAuth();
+  const birthDate = readBirthDate(user);
+  const daysToBirthday = daysUntilBirthday(birthDate);
   const {
     loyalty, rewards, offers, redemptions, tier, tiers, usdValue, loading, error, retry,
     claiming, handleClaimBirthday, redeemingId, handleRedeem,
@@ -66,10 +72,12 @@ export default function LoyaltyPointsScreen({ navigation }) {
     const lines = tiers
       .map((t) => `• Nivel ${t.key} — desde ${t.min.toLocaleString('es')} hojas`)
       .join('\n');
-    Alert.alert(
-      'Beneficios por nivel',
-      `${lines}\n\nGanas 1 hoja por cada $1 de tus pedidos, así que subes de nivel comprando en la tienda.`
-    );
+    toast.alert({
+      title: 'Beneficios por nivel',
+      message: `${lines}\n\nGanas 1 hoja por cada $1 de tus pedidos, así que subes de nivel comprando en la tienda.`,
+      icon: 'ribbon',
+      confirmLabel: 'Entendido',
+    });
   };
 
   const QUICK_ACTIONS = [
@@ -288,9 +296,11 @@ export default function LoyaltyPointsScreen({ navigation }) {
 
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Tu código de referido</Text>
-              <View style={styles.referralRow}>
-                <Text style={styles.referralCode}>{loyalty.referralCode}</Text>
-              </View>
+              <CopyableCode
+                code={loyalty.referralCode}
+                label='Código de referido copiado'
+                hint='Toca para copiarlo y compartirlo'
+              />
               <Text style={styles.cardHint}>
                 Comparte este código: cuando un amigo lo use al registrarse, ganas 200 hojas en su primera compra.
               </Text>
@@ -302,6 +312,40 @@ export default function LoyaltyPointsScreen({ navigation }) {
                 <Text style={styles.cardTitle}>Bono de cumpleaños</Text>
               </View>
               <Text style={styles.cardHint}>{BIRTHDAY_COPY[loyalty.birthdayStatus]}</Text>
+
+              {birthDate ? (
+                <View style={styles.birthdayRow}>
+                  <Ionicons name="calendar" size={15} color={colors.primary} />
+                  <View style={styles.birthdayTexts}>
+                    <Text style={styles.birthdayDate}>{formatBirthDay(birthDate)}</Text>
+                    {daysToBirthday === 0 ? (
+                      <Text style={styles.birthdayNote}>¡Es hoy!</Text>
+                    ) : daysToBirthday != null ? (
+                      <Text style={styles.birthdayNote}>
+                        {daysToBirthday === 1
+                          ? 'Falta 1 día'
+                          : 'Faltan ' + daysToBirthday + ' días'}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('EditProfile')}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="pencil" size={14} color={colors.placeholder} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.addBirthdayButton}
+                  onPress={() => navigation.navigate('EditProfile')}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="calendar-outline" size={16} color={colors.white} />
+                  <Text style={styles.addBirthdayText}>Agregar fecha de cumpleaños</Text>
+                </TouchableOpacity>
+              )}
+
               {loyalty.birthdayStatus === 'available' ? (
                 <View style={{ marginTop: 12 }}>
                   <Button label="Reclamar 100 hojas" onPress={handleClaimBirthday} loading={claiming} />
@@ -506,13 +550,31 @@ const createStyles = (colors) =>
     earnBadgeText: { fontSize: 12, fontWeight: '800', color: '#1B7A3D' },
     earnBadgeTextGold: { color: '#8A6D1F' },
 
+    birthdayRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primarySoft,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginTop: 10,
+    },
+    birthdayTexts: { flex: 1, marginLeft: 10 },
+    birthdayDate: { fontSize: 14, fontWeight: '800', color: colors.primary },
+    birthdayNote: { fontSize: 11, color: colors.placeholder, marginTop: 2 },
+    addBirthdayButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: 46,
+      borderRadius: 23,
+      marginTop: 12,
+      backgroundColor: colors.primary,
+    },
+    addBirthdayText: { fontSize: 13.5, fontWeight: '700', color: colors.white, marginLeft: 8 },
     card: { backgroundColor: colors.card, borderRadius: 14, padding: 16, marginTop: 12 },
     cardTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
     cardTitle: { fontSize: 14, fontWeight: '800', color: colors.text },
-    referralRow: {
-      backgroundColor: colors.primarySoft, borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 8,
-    },
-    referralCode: { fontSize: 18, fontWeight: '800', color: colors.primary, letterSpacing: 1 },
     couponRow: {
       flexDirection: 'row',
       alignItems: 'center',

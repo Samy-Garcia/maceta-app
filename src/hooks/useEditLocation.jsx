@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext.jsx';
 import { updateAddress } from '../services/addresses.js';
 import { PHONE_REGEX } from '../utils/validators.js';
+import { useToast } from '../context/ToastContext.jsx';
 
 // Edita una dirección real ya guardada (PUT /api/loginClient/me/addresses/:id)
 export function useEditLocation(navigation, address) {
+  const toast = useToast();
   const { refreshUser } = useAuth();
   const [fullName, setFullName] = useState(address?.fullName ?? '');
   const [addressLine, setAddressLine] = useState(address?.addressLine ?? '');
@@ -38,9 +39,8 @@ export function useEditLocation(navigation, address) {
         isDefault,
       });
       await refreshUser();
-      Alert.alert('Dirección actualizada', 'Tus cambios se guardaron correctamente.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      toast.success('Dirección actualizada', 'Tus cambios se guardaron correctamente.');
+    navigation.goBack();
     } catch (err) {
       setError(err.message || 'No se pudo actualizar la dirección.');
     } finally {

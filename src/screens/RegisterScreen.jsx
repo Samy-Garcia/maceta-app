@@ -20,7 +20,7 @@ export default function RegisterScreen({ navigation }) {
     phone, setPhone, address, setAddress,
     password, setPassword, confirmPassword, setConfirmPassword,
     referralCode, setReferralCode,
-    loading, error, handleRegister, goToLogin, handleGoogleRegister,
+    loading, error, handleRegister, goToLogin, handleGoogleRegister, googleLoading,
   } = useRegister(navigation);
 
   // Solo controla el botón: la validación y el envío siguen viviendo en useRegister
@@ -95,7 +95,7 @@ export default function RegisterScreen({ navigation }) {
 
       <Divider />
 
-      <GoogleButton onPress={handleGoogleRegister} label="Registrarse con Google" />
+      <GoogleButton onPress={handleGoogleRegister} label="Registrarse con Google" loading={googleLoading} />
 
       <TouchableOpacity onPress={goToLogin} style={styles.loginLink}>
         <Text style={styles.loginText}>

@@ -14,7 +14,7 @@ export default function LoginScreen({ navigation, route }) {
   const styles = createStyles(colors);
   const {
     email, setEmail, password, setPassword, loading, error,
-    handleLogin, goToRegister, goToForgotPassword, handleGoogleLogin,
+    handleLogin, goToRegister, goToForgotPassword, handleGoogleLogin, googleLoading,
   } = useLogin(navigation);
 
   const notice = route?.params?.registered
@@ -56,7 +56,7 @@ export default function LoginScreen({ navigation, route }) {
 
       <Divider />
 
-      <GoogleButton onPress={handleGoogleLogin} />
+      <GoogleButton onPress={handleGoogleLogin} loading={googleLoading} />
 
       <TouchableOpacity onPress={goToRegister} style={styles.registerLink}>
         <Text style={styles.registerText}>

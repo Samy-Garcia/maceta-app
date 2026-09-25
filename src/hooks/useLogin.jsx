@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { ApiError } from '../services/api.js';
+import { useGoogleAuth } from './useGoogleAuth.jsx';
 
 //  formulario de inicio de sesión
 export function useLogin(navigation) {
   const { login } = useAuth();
+  const google = useGoogleAuth(navigation);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,7 +40,8 @@ export function useLogin(navigation) {
 
   const goToRegister = () => navigation.navigate('Register');
   const goToForgotPassword = () => navigation.navigate('ForgotPassword');
-  const handleGoogleLogin = () => {};
+  // El flujo completo (ventana de Google + POST /api/loginClient/google) vive en useGoogleAuth
+  const handleGoogleLogin = google.signIn;
 
   return {
     email,
@@ -51,5 +54,6 @@ export function useLogin(navigation) {
     goToRegister,
     goToForgotPassword,
     handleGoogleLogin,
+    googleLoading: google.loading,
   };
 }

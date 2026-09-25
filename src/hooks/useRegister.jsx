@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { apiFetch } from '../services/api.js';
 import { EMAIL_REGEX, NAME_REGEX, PASSWORD_HINT, PASSWORD_REGEX, PHONE_REGEX } from '../utils/validators.js';
+import { useGoogleAuth } from './useGoogleAuth.jsx';
 
 // formulario de creación de cuenta (POST /api/registerClient -> envía código de verificación al correo)
 export function useRegister(navigation) {
+  const google = useGoogleAuth(navigation);
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -69,7 +71,8 @@ export function useRegister(navigation) {
   };
 
   const goToLogin = () => navigation.navigate('Login');
-  const handleGoogleRegister = () => {};
+  // Mismo flujo que el login: si la cuenta de Google no existe, el backend la crea
+  const handleGoogleRegister = google.signIn;
 
   return {
     name,
@@ -93,5 +96,6 @@ export function useRegister(navigation) {
     handleRegister,
     goToLogin,
     handleGoogleRegister,
+    googleLoading: google.loading,
   };
 }

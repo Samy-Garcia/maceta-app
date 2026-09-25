@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar.jsx';
 import Logo from '../components/Logo.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { useLoyalty } from '../hooks/useLoyalty.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 
 // Tonos de marca fijos (van sobre el verde oscuro de la tarjeta)
 const GOLD = '#F3D89B';
@@ -33,6 +34,7 @@ function tagFor(reward) {
 export default function RedeemRewardsScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const toast = useToast();
   const { loyalty, rewards, tier, loading, error, retry, redeemingId, handleRedeem } = useLoyalty();
   const [filter, setFilter] = useState('all');
 
@@ -54,10 +56,13 @@ export default function RedeemRewardsScreen({ navigation }) {
   const visible = filter === 'all' ? catalog : catalog.filter((r) => r.type === filter);
 
   const showHelp = () =>
-    Alert.alert(
-      '¿Cómo canjeo mis Hojas?',
-      'Elige una recompensa con hojas suficientes y toca "Canjear". Los cupones te dan un código para usar al confirmar tu pedido; los productos se agregan a tu próximo envío.'
-    );
+    toast.alert({
+      title: '¿Cómo canjeo mis Hojas?',
+      message:
+        'Elige una recompensa con hojas suficientes y toca "Canjear". Los cupones te dan un código para usar al confirmar tu pedido; los productos se agregan a tu próximo envío.',
+      icon: 'help-circle',
+      confirmLabel: 'Entendido',
+    });
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>

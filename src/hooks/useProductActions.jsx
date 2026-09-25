@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import { apiFetch } from '../services/api.js';
 import { fetchFavoriteIds } from '../services/products.js';
 import { useCart } from '../context/CartContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 
 // El backend identifica cada favorito como "tipo-id" (ver getFavoriteIds en
 // wishListController.js), no solo el id del producto — dos productos de
@@ -13,6 +13,7 @@ export const favoriteKey = (productType, id) => `${productType}-${id}`;
 // que muestre tarjetas de producto (Productos, Home, etc).
 export function useProductActions() {
   const { addToCart: addToCartApi } = useCart();
+  const toast = useToast();
   const [favoriteIds, setFavoriteIds] = useState(new Set());
 
   const loadFavorites = () => {
@@ -23,7 +24,7 @@ export function useProductActions() {
 
   const toggleFavorite = async (product) => {
     if (product.productType === 'planta') {
-      Alert.alert('No disponible', 'Los favoritos todavía no están disponibles para plantas.');
+      toast.info('Aún no disponible', 'Los favoritos todavía no están disponibles para plantas.');
       return;
     }
     const key = favoriteKey(product.productType, product.id);
@@ -49,20 +50,20 @@ export function useProductActions() {
         wasFavorite ? next.add(key) : next.delete(key);
         return next;
       });
-      Alert.alert('Error', err.message || 'No se pudo actualizar tu lista de deseos.');
+      toast.error('No se pudo guardar', err.message || 'No se pudo actualizar tu lista de deseos.');
     }
   };
 
   const addToCart = async (product, quantity = 1) => {
     if (!product.stock) {
-      Alert.alert('Sin stock', 'Este producto no tiene unidades disponibles por ahora.');
+      toast.warning('Sin stock', 'Este producto no tiene unidades disponibles por ahora.');
       return;
     }
     try {
       await addToCartApi(product.id, product.productType, quantity);
-      Alert.alert('Agregado', `${product.name} se agregó al carrito.`);
+      toast.success('Agregado al carrito', product.name);
     } catch (err) {
-      Alert.alert('Error', err.message || 'No se pudo agregar el producto al carrito.');
+      toast.error('No se pudo agregar', err.message || 'No se pudo agregar el producto al carrito.');
     }
   };
 

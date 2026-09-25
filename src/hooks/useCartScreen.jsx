@@ -1,7 +1,7 @@
-import { Alert } from 'react-native';
 import { useCart } from '../context/CartContext.jsx';
 import { typeLabel } from '../utils/productTypes.js';
 import { useStoreConfig } from './useStoreConfig.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 
 
 // Pantalla del carrito: cantidades, eliminar y envío real (calculado en el
@@ -11,6 +11,7 @@ import { useStoreConfig } from './useStoreConfig.jsx';
 export function useCartScreen(navigation) {
   const { cart, loading, updateQuantity, removeItem, shippingInfo } = useCart();
   const { freeShippingFrom } = useStoreConfig();
+  const toast = useToast();
 
   const items = cart.products || [];
   const subtotal = cart.total || 0;
@@ -31,39 +32,43 @@ export function useCartScreen(navigation) {
     try {
       await updateQuantity(item._id, nextQuantity);
     } catch (err) {
-      Alert.alert('Error', err.message || 'No se pudo actualizar la cantidad.');
+      toast.error('No se pudo actualizar', err.message || 'No se pudo actualizar la cantidad.');
     }
   };
 
-  const handleRemove = (item) => {
-    Alert.alert('Eliminar producto', `¿Quitar "${item.product?.name}" del carrito?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await removeItem(item._id);
-          } catch (err) {
-            Alert.alert('Error', err.message || 'No se pudo eliminar el producto.');
-          }
-        },
-      },
-    ]);
+  const handleRemove = async (item) => {
+    const ok = await toast.confirm({
+      title: 'Eliminar producto',
+      message: '¿Quitar "' + (item.product?.name || 'este producto') + '" del carrito?',
+      confirmLabel: 'Eliminar',
+      icon: 'trash-outline',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    try {
+      await removeItem(item._id);
+    } catch (err) {
+      toast.error('No se pudo eliminar', err.message || 'No se pudo eliminar el producto.');
+    }
   };
 
   const goToShippingMap = () => navigation.navigate('MapLocation', { returnTo: 'Cart' });
 
-  const goToPayment = () => {
+  const goToPayment = async () => {
     if (!items.length) {
-      Alert.alert('Carrito vacío', 'Agrega productos antes de continuar.');
+      toast.warning('Carrito vacío', 'Agrega productos antes de continuar.');
       return;
     }
     if (!shippingInfo) {
-      Alert.alert('Falta la ubicación de envío', 'Marca tu dirección en el mapa antes de continuar.', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Elegir en el mapa', onPress: goToShippingMap },
-      ]);
+      const ok = await toast.confirm({
+        title: 'Falta la dirección de envío',
+        message: 'Marca dónde quieres recibir tu pedido para calcular el envío.',
+        confirmLabel: 'Elegir en el mapa',
+        icon: 'location-outline',
+      });
+      if (ok) goToShippingMap();
+      return;
       return;
     }
     navigation.navigate('Payment');

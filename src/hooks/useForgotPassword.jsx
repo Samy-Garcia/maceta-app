@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { apiFetch } from '../services/api.js';
 import { EMAIL_REGEX } from '../utils/validators.js';
+import { useGoogleAuth } from './useGoogleAuth.jsx';
 
 // recuperación de contraseña: pide el código (POST /api/recoveryPasswordClient)
 // El Swagger documenta esta ruta como /api/recoveryClient, pero en app.js del
 // backend está montada como /api/recoveryPasswordClient — mismo tipo de
 // desajuste que /api/posts vs /api/post o /api/route vs /api/ruta.
 export function useForgotPassword(navigation) {
+  const google = useGoogleAuth(navigation);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -36,7 +38,7 @@ export function useForgotPassword(navigation) {
     }
   };
 
-  const handleGoogleLogin = () => {};
+  const handleGoogleLogin = google.signIn;
 
-  return { email, setEmail, loading, error, handleSendCode, handleGoogleLogin };
+  return { email, setEmail, loading, error, handleSendCode, handleGoogleLogin, googleLoading: google.loading };
 }

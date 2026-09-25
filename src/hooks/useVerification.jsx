@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { apiFetch } from '../services/api.js';
+import { useGoogleAuth } from './useGoogleAuth.jsx';
 
 // verificación del código de 6 dígitos: sirve tanto para confirmar el registro
 // (POST /api/registerClient/verifyCodeEmail) como para la recuperación de contraseña
@@ -7,6 +8,7 @@ import { apiFetch } from '../services/api.js';
 // /api/recoveryClient/verifyCode, pero el backend real usa ese otro nombre).
 // El flujo llega por route.params.flow.
 export function useVerification(navigation, params = {}) {
+  const google = useGoogleAuth(navigation);
   const { flow = 'recovery', email = '' } = params;
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,7 +43,7 @@ export function useVerification(navigation, params = {}) {
     }
   };
 
-  const handleGoogleLogin = () => {};
+  const handleGoogleLogin = google.signIn;
 
-  return { code, setCode, loading, error, handleVerifyCode, handleGoogleLogin, flow, email };
+  return { code, setCode, loading, error, handleVerifyCode, handleGoogleLogin, googleLoading: google.loading, flow, email };
 }
