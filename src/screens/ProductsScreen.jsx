@@ -39,7 +39,8 @@ export default function ProductsScreen({ navigation, route }) {
     filtersVisible, setFiltersVisible,
     availableSizes, sizeFilters, toggleSizeFilter,
     availableColors, colorFilters, toggleColorFilter,
-    maxPrice, priceRange, setPriceRange, resetFilters, activeFilterCount,
+    maxPrice, priceRange, setPriceRange, onlyOffers, setOnlyOffers,
+    onlyAvailable, setOnlyAvailable, resetFilters, activeFilterCount,
   } = useProducts({ tab: route?.params?.tab, query: route?.params?.query });
 
   const chips = tabs.filter((tab) => CHIP_KEYS.includes(tab.key));
@@ -210,6 +211,11 @@ export default function ProductsScreen({ navigation, route }) {
       <FiltersModal
         visible={filtersVisible}
         onClose={() => setFiltersVisible(false)}
+        tabs={tabs}
+        counts={counts}
+        activeTab={activeTab}
+        changeTab={changeTab}
+        sortOptions={sortOptions}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
         availableSizes={availableSizes}
@@ -221,7 +227,13 @@ export default function ProductsScreen({ navigation, route }) {
         maxPrice={maxPrice}
         priceRange={priceRange}
         setPriceRange={setPriceRange}
+        onlyOffers={onlyOffers}
+        setOnlyOffers={setOnlyOffers}
+        onlyAvailable={onlyAvailable}
+        setOnlyAvailable={setOnlyAvailable}
         resetFilters={resetFilters}
+        activeFilterCount={activeFilterCount}
+        resultCount={totalCount}
       />
     </SafeAreaView>
   );

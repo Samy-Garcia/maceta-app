@@ -1,20 +1,43 @@
+import { useCallback, useState } from 'react';
 import { Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
+import { useActiveOrders } from './useActiveOrders.jsx';
+import { getCards } from '../services/cardsStorage.js';
+import { fetchMyLoyalty } from '../services/loyalty.js';
 
-export const PROFILE_MENU_ITEMS = [
-  { key: 'orders', icon: 'receipt-outline', label: 'Mis pedidos', subtitle: 'Ver historial de compras', route: 'Orders' },
-  { key: 'wishlist', icon: 'heart-outline', label: 'Mi lista de deseos', subtitle: 'Productos guardados', route: 'Wishlist' },
-  { key: 'cards', icon: 'card-outline', label: 'Métodos de pago', subtitle: 'Tarjetas guardadas', route: 'ManageCards' },
-  { key: 'addresses', icon: 'location-outline', label: 'Direcciones', subtitle: 'Ubicaciones guardadas', route: 'AddressList' },
-  { key: 'loyalty', icon: 'leaf-outline', label: 'Puntos de lealtad', subtitle: 'Tus hojas y recompensas', route: 'LoyaltyPoints' },
-];
-
+// Perfil: resume lo que el cliente ya tiene guardado (tarjetas del
+// dispositivo, direcciones reales de la cuenta, pedidos en curso y hojas de
+// lealtad) y lleva a la pantalla que administra cada cosa.
 export function useProfile(navigation) {
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const activeOrders = useActiveOrders();
+
+  const [cards, setCards] = useState([]);
+  const [loyaltyPoints, setLoyaltyPoints] = useState(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  // Al volver de agregar una tarjeta o una dirección, el resumen se actualiza
+  useFocusEffect(
+    useCallback(() => {
+      getCards(user?.email)
+        .then(setCards)
+        .catch(() => setCards([]));
+      fetchMyLoyalty()
+        .then((data) => setLoyaltyPoints(data?.points ?? null))
+        .catch(() => setLoyaltyPoints(null));
+    }, [user?.email])
+  );
 
   const fullName = [user?.name, user?.lastName].filter(Boolean).join(' ') || 'Usuario';
+  const addresses = user?.addresses || [];
+  // La predeterminada es la que manda el backend; si ninguna lo está, la primera
+  const defaultAddress = addresses.find((address) => address.isDefault) || addresses[0] || null;
+  const defaultCard = cards[0] || null;
+
+  const go = (route, params) => () => navigation.navigate(route, params);
 
   const handleLogout = () => {
     Alert.alert('Cerrar sesión', '¿Seguro que quieres cerrar tu sesión?', [
@@ -23,8 +46,13 @@ export function useProfile(navigation) {
         text: 'Cerrar sesión',
         style: 'destructive',
         onPress: async () => {
-          await logout();
-          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          setLoggingOut(true);
+          try {
+            await logout();
+            navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
+          } finally {
+            setLoggingOut(false);
+          }
         },
       },
     ]);
@@ -35,7 +63,24 @@ export function useProfile(navigation) {
     fullName,
     isDark,
     toggleTheme,
-    menuItems: PROFILE_MENU_ITEMS,
+    cards,
+    defaultCard,
+    addresses,
+    defaultAddress,
+    activeOrders,
+    loyaltyPoints,
+    loggingOut,
+    goToEditProfile: go('EditProfile'),
+    goToCards: go('ManageCards'),
+    goToAddCard: go('EditCard'),
+    goToEditCard: (card) => navigation.navigate('EditCard', { cardId: card.id }),
+    goToAddresses: go('AddressList'),
+    goToAddAddress: go('MapLocation', { returnTo: 'Profile' }),
+    goToEditAddress: (address) => navigation.navigate('EditLocation', { address }),
+    goToOrders: go('Orders'),
+    goToWishlist: go('Wishlist'),
+    goToLoyalty: go('LoyaltyPoints'),
+    goToSecurity: go('ForgotPassword'),
     handleLogout,
   };
 }

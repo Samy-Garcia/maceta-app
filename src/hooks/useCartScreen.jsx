@@ -1,6 +1,7 @@
 import { Alert } from 'react-native';
 import { useCart } from '../context/CartContext.jsx';
 import { typeLabel } from '../utils/productTypes.js';
+import { useStoreConfig } from './useStoreConfig.jsx';
 
 
 // Pantalla del carrito: cantidades, eliminar y envío real (calculado en el
@@ -9,11 +10,19 @@ import { typeLabel } from '../utils/productTypes.js';
 // y una dirección elegida antes de pasar para allá.
 export function useCartScreen(navigation) {
   const { cart, loading, updateQuantity, removeItem, shippingInfo } = useCart();
+  const { freeShippingFrom } = useStoreConfig();
 
   const items = cart.products || [];
   const subtotal = cart.total || 0;
   const shippingCost = shippingInfo?.shippingCost || 0;
   const total = Number((subtotal + shippingCost).toFixed(2));
+
+  // Cuánto falta para el envío gratis real que tiene configurada la tienda
+  const qualifiesForFreeShipping = freeShippingFrom != null && subtotal >= freeShippingFrom;
+  const missingForFreeShipping =
+    freeShippingFrom != null ? Number(Math.max(0, freeShippingFrom - subtotal).toFixed(2)) : null;
+  const freeShippingProgress =
+    freeShippingFrom ? Math.min(1, subtotal / freeShippingFrom) : 0;
 
   const itemLabel = (item) => item.product?.dimensions || item.product?.size || typeLabel(item.productType);
 
@@ -67,6 +76,10 @@ export function useCartScreen(navigation) {
     shippingCost,
     shippingInfo,
     total,
+    freeShippingFrom,
+    qualifiesForFreeShipping,
+    missingForFreeShipping,
+    freeShippingProgress,
     itemLabel,
     changeQuantity,
     handleRemove,

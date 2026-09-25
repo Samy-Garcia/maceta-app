@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import { fetchRoute, fetchStoreConfig, reverseGeocode, searchAddress } from '../services/shipping.js';
+import { fetchRoute, fetchStoreConfig, parseNominatimAddress, reverseGeocode } from '../services/shipping.js';
 import { addAddress } from '../services/addresses.js';
 import { saveAddressCoords } from '../services/addressCoords.js';
 import { useCart } from '../context/CartContext.jsx';
@@ -9,9 +9,16 @@ import { useAuth } from '../context/AuthContext.jsx';
 // Tienda por defecto mientras carga la configuración real (mismo respaldo que usa la web)
 const DEFAULT_STORE = { lat: 13.6929, lng: -89.2182 };
 
+const coordsLabel = (coords) => `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`;
+
 // Selección de dirección de envío sobre OpenStreetMap: geocodifica el punto
-// elegido, calcula la ruta real (OSRM vía /api/route) y el costo con el
+// elegido, calcula la ruta real (OSRM vía /api/ruta) y el costo con el
 // pricePerKm configurado — igual que ShippingMap.jsx en la tienda web.
+//
+// La dirección del punto la resuelve el propio mapa (ver OsmMapPicker) y
+// llega aquí por applyGeocode: Nominatim bloquea con 403 las peticiones que
+// no se identifican, y dentro del WebView salen con User-Agent de navegador.
+//
 // Al confirmar, además de usarla para el pedido actual, la guarda como una
 // dirección real de la cuenta (POST /api/loginClient/me/addresses) para que
 // aparezca en "Mis Direcciones".
@@ -52,26 +59,16 @@ export function useShippingMap(navigation, returnTo = 'Cart') {
       .catch(() => {});
   }, []);
 
+  // Se dispara al tocar el mapa: marca el punto y pide la ruta real. La
+  // dirección legible llega aparte, por applyGeocode.
   const selectLocation = async (coords) => {
     setSelected(coords);
     setRoute(null);
-    setAddress('');
+    setAddress(coordsLabel(coords));
     setAddressDetails(null);
     setError('');
+    setSearching(false);
     setLoading(true);
-
-    // La dirección (Nominatim) y la ruta (OSRM) son dos llamadas independientes:
-    // si una falla, no debe tumbar a la otra, y cada una necesita su propio
-    // mensaje para poder distinguir cuál fue la que realmente falló.
-    try {
-      const geo = await reverseGeocode(coords.lat, coords.lng);
-      setAddress(geo.label);
-      setAddressDetails(geo);
-    } catch {
-      const fallback = `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`;
-      setAddress(fallback);
-      setAddressDetails({ label: fallback, addressLine: fallback, municipality: '', department: '' });
-    }
 
     try {
       const routeData = await fetchRoute(store, coords);
@@ -86,23 +83,29 @@ export function useShippingMap(navigation, returnTo = 'Cart') {
     }
   };
 
-  const handleSearch = async () => {
-    if (!query.trim()) return null;
-    setSearching(true);
-    setError('');
+  // Respuesta cruda de Nominatim que resolvió el mapa
+  const applyGeocode = async ({ lat, lng, data }) => {
+    if (data) {
+      const geo = parseNominatimAddress(data, lat, lng);
+      setAddress(geo.label);
+      setAddressDetails(geo);
+      return;
+    }
+    // Si el mapa no pudo resolverla (Nominatim limita por minuto), se intenta
+    // una vez más desde la app; si tampoco, quedan las coordenadas.
     try {
-      const result = await searchAddress(query.trim());
-      if (!result) {
-        setError('No se encontró esa dirección.');
-        return null;
-      }
-      await selectLocation({ lat: result.lat, lng: result.lng });
-      return result;
+      const geo = await reverseGeocode(lat, lng);
+      setAddress(geo.label);
+      setAddressDetails(geo);
     } catch {
-      setError('No se pudo buscar esa dirección.');
-      return null;
-    } finally {
-      setSearching(false);
+      // se queda el texto de coordenadas que ya puso selectLocation
+    }
+  };
+
+  const handleSearchResult = ({ found, failed }) => {
+    setSearching(false);
+    if (!found) {
+      setError(failed ? 'No se pudo buscar esa dirección.' : 'No se encontró esa dirección.');
     }
   };
 
@@ -153,7 +156,10 @@ export function useShippingMap(navigation, returnTo = 'Cart') {
   // sin explicar por qué. Ahora siempre da una razón concreta al tocarlo.
   const confirm = async () => {
     if (!selected) {
-      Alert.alert('Falta marcar tu ubicación', 'Toca el mapa (o busca tu dirección) para marcar dónde quieres tu envío.');
+      Alert.alert(
+        'Falta marcar tu ubicación',
+        'Toca el mapa (o busca tu dirección) para marcar dónde quieres tu envío.'
+      );
       return;
     }
     if (loading) {
@@ -163,7 +169,8 @@ export function useShippingMap(navigation, returnTo = 'Cart') {
     if (!route) {
       Alert.alert(
         'No se pudo calcular la ruta',
-        error || 'No se pudo calcular la ruta hasta ese punto. Intenta marcar otro lugar más cercano a una calle.'
+        error ||
+          'No se pudo calcular la ruta hasta ese punto. Intenta marcar otro lugar más cercano a una calle.'
       );
       return;
     }
@@ -186,9 +193,24 @@ export function useShippingMap(navigation, returnTo = 'Cart') {
   };
 
   return {
-    store, selected, address, route, shippingCost, loading, error, saving,
-    query, setQuery, searching, handleSearch, selectLocation, confirm,
+    store,
+    selected,
+    address,
+    route,
+    shippingCost,
+    loading,
+    error,
+    saving,
+    query,
+    setQuery,
+    searching,
+    setSearching,
+    selectLocation,
+    applyGeocode,
+    handleSearchResult,
+    confirm,
     canConfirm: !!selected && !!route,
-    qualifiesForFreeShipping, freeShippingMinAmount,
+    qualifiesForFreeShipping,
+    freeShippingMinAmount,
   };
 }

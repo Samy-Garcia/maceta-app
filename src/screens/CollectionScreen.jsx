@@ -37,7 +37,8 @@ export default function CollectionScreen({ navigation, route }) {
     filtersVisible, setFiltersVisible,
     availableSizes, sizeFilters, toggleSizeFilter, clearSizeFilters,
     availableColors, colorFilters, toggleColorFilter,
-    maxPrice, priceRange, setPriceRange, resetFilters, activeFilterCount,
+    maxPrice, priceRange, setPriceRange, onlyOffers, setOnlyOffers,
+    onlyAvailable, setOnlyAvailable, resetFilters, activeFilterCount,
   } = useProducts({ tab: route?.params?.tab || 'maceta' });
 
   const current = tabs.find((tab) => tab.key === activeTab);
@@ -134,15 +135,17 @@ export default function CollectionScreen({ navigation, route }) {
               </Text>
             </TouchableOpacity>
             {availableSizes.map((size) => {
-              const active = sizeFilters.has(size);
+              const active = sizeFilters.has(size.name);
               return (
                 <TouchableOpacity
-                  key={size}
+                  key={size.name}
                   style={[styles.sizeChip, active && styles.sizeChipActive]}
-                  onPress={() => toggleSizeFilter(size)}
+                  onPress={() => toggleSizeFilter(size.name)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.sizeChipText, active && styles.sizeChipTextActive]}>{size}</Text>
+                  <Text style={[styles.sizeChipText, active && styles.sizeChipTextActive]}>
+                    {size.name}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
@@ -221,6 +224,11 @@ export default function CollectionScreen({ navigation, route }) {
       <FiltersModal
         visible={filtersVisible}
         onClose={() => setFiltersVisible(false)}
+        tabs={tabs}
+        counts={counts}
+        activeTab={activeTab}
+        changeTab={changeTab}
+        sortOptions={sortOptions}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
         availableSizes={availableSizes}
@@ -232,7 +240,13 @@ export default function CollectionScreen({ navigation, route }) {
         maxPrice={maxPrice}
         priceRange={priceRange}
         setPriceRange={setPriceRange}
+        onlyOffers={onlyOffers}
+        setOnlyOffers={setOnlyOffers}
+        onlyAvailable={onlyAvailable}
+        setOnlyAvailable={setOnlyAvailable}
         resetFilters={resetFilters}
+        activeFilterCount={activeFilterCount}
+        resultCount={totalCount}
       />
     </SafeAreaView>
   );

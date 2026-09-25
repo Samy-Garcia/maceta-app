@@ -57,6 +57,8 @@ export function useProducts(initial = {}) {
   const [sizeFilters, setSizeFilters] = useState(new Set());
   const [colorFilters, setColorFilters] = useState(new Set());
   const [priceRange, setPriceRange] = useState(null); // null = sin filtrar por precio
+  const [onlyOffers, setOnlyOffers] = useState(false);
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -156,17 +158,25 @@ export function useProducts(initial = {}) {
   // verdad tiene al menos un producto de esta categoría — nada de listas
   // fijas que no coincidan con lo que hay en la base de datos.
   const availableSizes = useMemo(() => {
-    const set = new Set();
-    rawItems.forEach((item) => item.sizes?.forEach((s) => s && set.add(s)));
-    return Array.from(set).sort();
+    const tally = new Map();
+    rawItems.forEach((item) =>
+      new Set(item.sizes?.filter(Boolean)).forEach((size) => tally.set(size, (tally.get(size) || 0) + 1))
+    );
+    return Array.from(tally.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [rawItems]);
 
   const availableColors = useMemo(() => {
     const map = new Map();
     rawItems.forEach((item) =>
-      item.colorOptions?.forEach((c) => c?.name && !map.has(c.name) && map.set(c.name, c.hex))
+      new Set(item.colorOptions?.map((c) => c?.name).filter(Boolean)).forEach((name) => {
+        const hex = item.colorOptions.find((c) => c.name === name)?.hex;
+        const found = map.get(name);
+        map.set(name, { name, hex: found?.hex || hex, count: (found?.count || 0) + 1 });
+      })
     );
-    return Array.from(map.entries()).map(([name, hex]) => ({ name, hex }));
+    return Array.from(map.values());
   }, [rawItems]);
 
   const maxPrice = useMemo(() => {
@@ -186,6 +196,12 @@ export function useProducts(initial = {}) {
     if (colorFilters.size > 0) {
       list = list.filter((item) => item.colorOptions?.some((c) => colorFilters.has(c.name)));
     }
+    if (onlyOffers) {
+      list = list.filter((item) => item.discountedPrice != null);
+    }
+    if (onlyAvailable) {
+      list = list.filter((item) => item.stock > 0);
+    }
     if (priceRange) {
       list = list.filter((item) => {
         const p = item.discountedPrice ?? item.price;
@@ -200,7 +216,7 @@ export function useProducts(initial = {}) {
       list = [...list].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
     }
     return list;
-  }, [rawItems, query, sortOrder, sizeFilters, colorFilters, priceRange]);
+  }, [rawItems, query, sortOrder, sizeFilters, colorFilters, priceRange, onlyOffers, onlyAvailable]);
 
   const visibleItems = items.slice(0, visibleCount);
   const hasMore = visibleCount < items.length;
@@ -233,11 +249,19 @@ export function useProducts(initial = {}) {
     setSizeFilters(new Set());
     setColorFilters(new Set());
     setPriceRange(null);
+    setOnlyOffers(false);
+    setOnlyAvailable(false);
     setSortOrder('default');
+    setVisibleCount(PAGE_SIZE);
   };
 
   const activeFilterCount =
-    sizeFilters.size + colorFilters.size + (priceRange ? 1 : 0) + (sortOrder !== 'default' ? 1 : 0);
+    sizeFilters.size +
+    colorFilters.size +
+    (priceRange ? 1 : 0) +
+    (onlyOffers ? 1 : 0) +
+    (onlyAvailable ? 1 : 0) +
+    (sortOrder !== 'default' ? 1 : 0);
 
   return {
     tabs: PRODUCT_TABS,
@@ -272,6 +296,10 @@ export function useProducts(initial = {}) {
     maxPrice,
     priceRange,
     setPriceRange,
+    onlyOffers,
+    setOnlyOffers,
+    onlyAvailable,
+    setOnlyAvailable,
     resetFilters,
     activeFilterCount,
   };

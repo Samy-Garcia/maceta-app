@@ -40,3 +40,26 @@ export function formatOrderDate(dateStr) {
   }
   return `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
 }
+
+// Colores de la etiqueta de estado. En oscuro se usan fondos apagados con
+// texto claro: los pasteles del tema claro deslumbran sobre fondo negro.
+const STATUS_COLORS_LIGHT = {
+  confirmed: { bg: '#FDF1DC', text: '#9A6B16' },
+  progress: { bg: '#E6F0E9', text: '#1B4D2E' },
+  transit: { bg: '#E3EAF8', text: '#33528F' },
+  done: { bg: '#E3F0E5', text: '#2F6B41' },
+  rejected: { bg: '#F8E2E2', text: '#A6382F' },
+};
+
+const STATUS_COLORS_DARK = {
+  confirmed: { bg: '#2E2716', text: '#E3BE72' },
+  progress: { bg: '#1B2A20', text: '#6FBE8C' },
+  transit: { bg: '#1B2333', text: '#8FAEE8' },
+  done: { bg: '#1B2A20', text: '#7FCE9B' },
+  rejected: { bg: '#2F1F1D', text: '#DD9183' },
+};
+
+export function statusColors(kind, isDark) {
+  const palette = isDark ? STATUS_COLORS_DARK : STATUS_COLORS_LIGHT;
+  return palette[kind] || palette.confirmed;
+}

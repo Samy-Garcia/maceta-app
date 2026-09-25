@@ -1,155 +1,346 @@
-import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar.jsx';
+import ShopHeader from '../components/ShopHeader.jsx';
+import ReviewModal from '../components/ReviewModal.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
+import { SERIF } from '../theme/typography.js';
 import { useOrders } from '../hooks/useOrders.jsx';
-import { formatOrderDate } from '../utils/orderStatus.js';
-
-const STATUS_COLORS = {
-  confirmed: { bg: '#FBE3DE', text: '#B23B2E' },
-  progress: { bg: '#DCEFE1', text: '#1B4D2E' },
-  transit: { bg: '#DCE7FA', text: '#3B5DB2' },
-  done: { bg: '#E4EFE4', text: '#3D6B4A' },
-  rejected: { bg: '#F8D7DA', text: '#B23B2E' },
-};
+import { formatOrderDate, statusColors } from '../utils/orderStatus.js';
 
 export default function OrdersScreen({ navigation }) {
-  const { colors } = useTheme();
-  const styles = createStyles(colors);
+  const { colors, isDark } = useTheme();
+  const styles = createStyles(colors, isDark);
   const {
-    tabs, tab, setTab, orders, loading, error, retry,
-    reordering, goToDetail, buyAgain, getStatusMeta, summarizeItems,
+    tabs, tab, setTab, countOf, activeCount, query, setQuery,
+    orders, loading, refreshing, error, retry, refresh,
+    reordering, goToDetail, buyAgain,
+    canReview, reviewOrder, setReviewOrder, submitReview, savingReview,
+    getStatusMeta,
   } = useOrders(navigation);
+
+  const renderOrder = ({ item: order }) => {
+    const meta = getStatusMeta(order.status);
+    const statusColor = statusColors(meta.kind, isDark);
+    const products = order.products || [];
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardOverline}>ATELIER MACETAS503</Text>
+
+        <View style={styles.cardTop}>
+          <Text style={styles.orderCode}>Pedido {order.orderCode}</Text>
+          <View style={[styles.statusPill, { backgroundColor: statusColor.bg }]}>
+            <Text style={[styles.statusText, { color: statusColor.text }]}>{meta.label}</Text>
+          </View>
+        </View>
+
+        <View style={styles.metaRow}>
+          <Text style={styles.orderDate}>{formatOrderDate(order.createdAt)}</Text>
+          <View style={styles.metaDot} />
+          <Text style={styles.orderTotal}>Total: ${order.total?.toFixed(2)}</Text>
+        </View>
+
+        {products.map((item) => (
+          <View key={item._id} style={styles.itemRow}>
+            {item.product?.image ? (
+              <Image source={{ uri: item.product.image }} style={styles.itemImage} />
+            ) : (
+              <View style={[styles.itemImage, styles.itemImageFallback]}>
+                <Ionicons name="leaf-outline" size={18} color={colors.placeholder} />
+              </View>
+            )}
+            <View style={styles.itemTexts}>
+              <Text style={styles.itemName} numberOfLines={1}>
+                {item.product?.name || 'Producto eliminado'}
+              </Text>
+              <Text style={styles.itemMeta}>
+                {item.quantity} {item.quantity === 1 ? 'unidad' : 'unidades'}
+              </Text>
+            </View>
+            <Text style={styles.itemPrice}>${item.subtotal?.toFixed(2)}</Text>
+          </View>
+        ))}
+
+        {order.shippingAddress ? (
+          <View style={styles.addressRow}>
+            <Ionicons name="location-outline" size={14} color={colors.maroon} />
+            <Text style={styles.addressText} numberOfLines={2}>{order.shippingAddress}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.actions}>
+          {canReview(order) ? (
+            <TouchableOpacity style={styles.ghostButton} onPress={() => setReviewOrder(order)}>
+              <Text style={styles.ghostText}>Reseña</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity style={styles.ghostButton} onPress={() => goToDetail(order)}>
+            <Text style={styles.ghostText}>Ver detalle</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.solidButton}
+            onPress={() => buyAgain(order)}
+            disabled={reordering === order._id}
+            activeOpacity={0.85}
+          >
+            {reordering === order._id ? (
+              <ActivityIndicator color={colors.white} size="small" />
+            ) : (
+              <Text style={styles.solidText}>Volver a comprar</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mis Pedidos</Text>
-        <Ionicons name="menu" size={22} color={colors.white} />
-      </View>
-
-      <View style={styles.tabs}>
-        {tabs.map((t) => (
-          <TouchableOpacity
-            key={t.key}
-            style={[styles.tabPill, tab === t.key && styles.tabPillActive]}
-            onPress={() => setTab(t.key)}
-          >
-            <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {loading ? <Text style={styles.stateText}>Cargando tus pedidos...</Text> : null}
-      {error ? (
-        <View style={styles.stateBox}>
-          <Text style={styles.stateText}>{error}</Text>
-          <TouchableOpacity onPress={retry}><Text style={styles.retryText}>Reintentar</Text></TouchableOpacity>
-        </View>
-      ) : null}
+      <ShopHeader />
 
       <FlatList
         contentContainerStyle={styles.list}
         data={orders}
         keyExtractor={(item) => item._id}
-        ListEmptyComponent={
-          !loading && !error ? <Text style={styles.stateText}>Todavía no tienes pedidos en esta categoría.</Text> : null
-        }
-        renderItem={({ item }) => {
-          const meta = getStatusMeta(item.status);
-          const statusColor = STATUS_COLORS[meta.kind];
-          const firstImage = item.products?.[0]?.product?.image;
-          return (
-            <View style={styles.card}>
-              <View style={styles.cardTop}>
-                <View style={styles.cardTitleWrap}>
-                  <Text style={styles.orderCode}>Pedido {item.orderCode}</Text>
-                  <Text style={styles.orderDate}>{formatOrderDate(item.createdAt)}</Text>
+        showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={refresh}
+        renderItem={renderOrder}
+        ListHeaderComponent={
+          <>
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>Pedidos</Text>
+              {activeCount > 0 ? (
+                <View style={styles.activePill}>
+                  <Text style={styles.activePillText}>{activeCount} activos</Text>
                 </View>
-                <View style={[styles.statusPill, { backgroundColor: statusColor.bg }]}>
-                  <Text style={[styles.statusText, { color: statusColor.text }]}>{meta.label}</Text>
-                </View>
-              </View>
-
-              <View style={styles.cardBody}>
-                {firstImage ? (
-                  <Image source={{ uri: firstImage }} style={styles.thumb} />
-                ) : (
-                  <View style={[styles.thumb, styles.thumbFallback]}>
-                    <Ionicons name="leaf-outline" size={18} color={colors.placeholder} />
-                  </View>
-                )}
-                <View style={styles.cardBodyText}>
-                  <Text style={styles.itemsSummary} numberOfLines={2}>{summarizeItems(item)}</Text>
-                  <Text style={styles.orderTotal}>$ {item.total?.toFixed(2)}</Text>
-                </View>
-              </View>
-
-              {meta.kind === 'done' ? (
-                <TouchableOpacity
-                  style={styles.secondaryButton}
-                  onPress={() => buyAgain(item)}
-                  disabled={reordering === item._id}
-                >
-                  <Text style={styles.secondaryButtonText}>
-                    {reordering === item._id ? 'Agregando...' : 'Volver a comprar'}
-                  </Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity style={styles.detailButton} onPress={() => goToDetail(item)}>
-                  <Text style={styles.detailButtonText}>Ver detalle</Text>
-                </TouchableOpacity>
-              )}
+              ) : null}
+              <View style={styles.titleSpacer} />
+              <TouchableOpacity style={styles.refreshButton} onPress={refresh}>
+                <Ionicons name="refresh" size={14} color={colors.text} />
+                <Text style={styles.refreshText}>Actualizar</Text>
+              </TouchableOpacity>
             </View>
-          );
-        }}
+
+            <Text style={styles.subtitle}>
+              Consulta y da seguimiento al estado de tus pedidos artesanales.
+            </Text>
+
+            <View style={styles.searchBar}>
+              <Ionicons name="search" size={16} color={colors.placeholder} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Buscar por código de pedido o pieza..."
+                placeholderTextColor={colors.placeholder}
+                style={styles.searchInput}
+              />
+            </View>
+
+            <View style={styles.tabsRow}>
+              {tabs.map((item) => {
+                const active = item.key === tab;
+                return (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[styles.tab, active && styles.tabActive]}
+                    onPress={() => setTab(item.key)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.tabText, active && styles.tabTextActive]}>{item.label}</Text>
+                    <Text style={[styles.tabCount, active && styles.tabCountActive]}>
+                      {countOf(item.key)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : null}
+
+            {error ? (
+              <View style={styles.stateBox}>
+                <Text style={styles.stateText}>{error}</Text>
+                <TouchableOpacity onPress={retry}>
+                  <Text style={styles.retryText}>Reintentar</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </>
+        }
+        ListEmptyComponent={
+          !loading && !error ? (
+            <View style={styles.emptyBox}>
+              <Ionicons name="cube-outline" size={30} color={colors.placeholder} />
+              <Text style={styles.stateText}>
+                {query.trim()
+                  ? 'Ningún pedido coincide con esa búsqueda.'
+                  : 'Todavía no tienes pedidos en esta categoría.'}
+              </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Products')}>
+                <Text style={styles.retryText}>Ver el catálogo</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null
+        }
       />
 
       <BottomTabBar active="Pedidos" />
+
+      <ReviewModal
+        order={reviewOrder}
+        onClose={() => setReviewOrder(null)}
+        onSubmit={submitReview}
+        saving={savingReview}
+      />
     </SafeAreaView>
   );
 }
 
-const createStyles = (colors) =>
+const createStyles = (colors, isDark) =>
   StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: colors.shopBg },
-    header: {
-      backgroundColor: colors.primary,
-      paddingHorizontal: 20,
-      paddingVertical: 18,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+    safeArea: { flex: 1, backgroundColor: isDark ? colors.background : '#F6F7F5' },
+    list: { paddingHorizontal: 20, paddingBottom: 20 },
+
+    titleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+    title: { fontFamily: SERIF, fontSize: 26, fontWeight: '700', color: colors.text, marginRight: 10 },
+    activePill: {
+      backgroundColor: colors.primarySoft,
+      borderRadius: 10,
+      paddingHorizontal: 9,
+      paddingVertical: 4,
     },
-    headerTitle: { color: colors.white, fontSize: 18, fontWeight: '700' },
-    tabs: { flexDirection: 'row', padding: 20, paddingBottom: 8 },
-    tabPill: { backgroundColor: colors.card, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 9, marginRight: 10 },
-    tabPillActive: { backgroundColor: colors.primary },
-    tabText: { fontSize: 13, color: colors.text, fontWeight: '600' },
+    activePillText: { fontSize: 11, fontWeight: '700', color: colors.primary },
+    titleSpacer: { flex: 1 },
+    refreshButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      height: 32,
+      paddingHorizontal: 12,
+      borderRadius: 16,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: isDark ? colors.border : '#E4E8E4',
+    },
+    refreshText: { fontSize: 11.5, fontWeight: '700', color: colors.text, marginLeft: 5 },
+
+    subtitle: { fontSize: 12.5, lineHeight: 18, color: colors.placeholder, marginTop: 6 },
+
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      height: 44,
+      borderRadius: 22,
+      paddingHorizontal: 14,
+      marginTop: 16,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: isDark ? colors.border : '#E9ECE9',
+    },
+    searchInput: { flex: 1, marginLeft: 8, fontSize: 13, color: colors.text },
+
+    tabsRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 14, marginBottom: 4 },
+    tab: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 14,
+      height: 34,
+      borderRadius: 17,
+      marginRight: 8,
+      marginBottom: 8,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: isDark ? colors.border : '#E4E8E4',
+    },
+    tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    tabText: { fontSize: 12.5, fontWeight: '600', color: colors.text },
     tabTextActive: { color: colors.white },
-    stateText: { fontSize: 12, color: colors.placeholder, textAlign: 'center', marginTop: 12 },
-    stateBox: { alignItems: 'center' },
-    retryText: { fontSize: 12, color: colors.primary, fontWeight: '700', marginTop: 4 },
-    list: { padding: 20, paddingTop: 8 },
-    card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 16 },
-    cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-    cardTitleWrap: { flex: 1, marginRight: 10 },
-    orderCode: { fontSize: 15, fontWeight: '800', color: colors.text },
-    orderDate: { fontSize: 11, color: colors.placeholder, marginTop: 2 },
+    tabCount: { fontSize: 10.5, fontWeight: '700', color: colors.placeholder, marginLeft: 6 },
+    tabCountActive: { color: 'rgba(255,255,255,0.8)' },
+
+    loader: { marginVertical: 24 },
+    stateBox: { alignItems: 'center', paddingVertical: 18 },
+    stateText: { fontSize: 13, color: colors.placeholder, textAlign: 'center', marginTop: 10 },
+    retryText: { fontSize: 13, fontWeight: '700', color: colors.primary, marginTop: 10 },
+    emptyBox: { alignItems: 'center', paddingVertical: 40 },
+
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 20,
+      padding: 16,
+      marginTop: 14,
+      borderWidth: 1,
+      borderColor: isDark ? colors.border : '#ECEFEC',
+    },
+    cardOverline: { fontSize: 8.5, letterSpacing: 1.4, fontWeight: '700', color: colors.placeholder },
+    cardTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 6,
+    },
+    orderCode: { fontFamily: SERIF, fontSize: 18, fontWeight: '700', color: colors.text, flex: 1 },
     statusPill: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 },
     statusText: { fontSize: 11, fontWeight: '700' },
-    cardBody: { flexDirection: 'row', alignItems: 'center', marginTop: 14 },
-    thumb: { width: 46, height: 46, borderRadius: 10, backgroundColor: colors.border },
-    thumbFallback: { alignItems: 'center', justifyContent: 'center' },
-    cardBodyText: { flex: 1, marginLeft: 12 },
-    itemsSummary: { fontSize: 13, color: colors.text, fontWeight: '600' },
-    orderTotal: { fontSize: 15, fontWeight: '800', color: colors.text, marginTop: 4 },
-    detailButton: { backgroundColor: colors.maroonDark, borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 14 },
-    detailButtonText: { color: colors.white, fontWeight: '700', fontSize: 14 },
-    secondaryButton: {
-      borderWidth: 1.5, borderColor: colors.primary, borderRadius: 12,
-      paddingVertical: 13, alignItems: 'center', marginTop: 14,
+
+    metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
+    orderDate: { fontSize: 12, color: colors.placeholder },
+    metaDot: {
+      width: 3,
+      height: 3,
+      borderRadius: 2,
+      backgroundColor: colors.placeholder,
+      marginHorizontal: 8,
     },
-    secondaryButtonText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
+    orderTotal: { fontSize: 12, fontWeight: '700', color: colors.text },
+
+    itemRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 10,
+      borderRadius: 14,
+      marginTop: 12,
+      backgroundColor: isDark ? colors.card : '#F7F9F8',
+    },
+    itemImage: { width: 44, height: 44, borderRadius: 11, backgroundColor: colors.border },
+    itemImageFallback: { alignItems: 'center', justifyContent: 'center' },
+    itemTexts: { flex: 1, marginHorizontal: 11 },
+    itemName: { fontSize: 13, fontWeight: '700', color: colors.text },
+    itemMeta: { fontSize: 11, color: colors.placeholder, marginTop: 2 },
+    itemPrice: { fontSize: 13.5, fontWeight: '700', color: colors.text },
+
+    addressRow: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 12 },
+    addressText: { flex: 1, fontSize: 11.5, lineHeight: 16, color: colors.placeholder, marginLeft: 6 },
+
+    actions: { flexDirection: 'row', alignItems: 'center', marginTop: 14 },
+    ghostButton: {
+      height: 42,
+      paddingHorizontal: 14,
+      borderRadius: 21,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 8,
+      backgroundColor: isDark ? colors.card : '#F2F4F2',
+    },
+    ghostText: { fontSize: 12.5, fontWeight: '700', color: colors.text },
+    solidButton: {
+      flex: 1,
+      height: 42,
+      borderRadius: 21,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.primary,
+    },
+    solidText: { fontSize: 12.5, fontWeight: '700', color: colors.white },
   });
