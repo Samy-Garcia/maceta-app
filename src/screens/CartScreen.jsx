@@ -19,7 +19,7 @@ export default function CartScreen({ navigation }) {
   const { colors, isDark } = useTheme();
   const styles = createStyles(colors, isDark);
   const {
-    items, loading, subtotal, shippingCost, shippingInfo, total,
+    items, loading, subtotal, shippingCost, total,
     freeShippingFrom, qualifiesForFreeShipping, missingForFreeShipping, freeShippingProgress,
     itemLabel, changeQuantity, handleRemove, goToPayment,
   } = useCartScreen(navigation);
@@ -167,11 +167,7 @@ export default function CartScreen({ navigation }) {
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Envío</Text>
               <Text style={styles.summaryValue}>
-                {shippingInfo
-                  ? shippingCost > 0
-                    ? '$' + shippingCost.toFixed(2)
-                    : 'Gratis'
-                  : 'Se calcula al elegir dirección'}
+                {shippingCost > 0 ? '$' + shippingCost.toFixed(2) : 'Gratis'}
               </Text>
             </View>
 

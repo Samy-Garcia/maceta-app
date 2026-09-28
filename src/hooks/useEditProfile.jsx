@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { apiFetch } from '../services/api.js';
 import { fetchMyLoyalty } from '../services/loyalty.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { NAME_REGEX, PHONE_REGEX } from '../utils/validators.js';
+import { filterName, filterPhoneChars, NAME_REGEX, PHONE_REGEX } from '../utils/validators.js';
 import { resolveTier } from '../utils/loyaltyTiers.js';
 import { fileToUploadBlob } from '../utils/fileToBlob.js';
 import { BIRTH_DATE_SEND_KEYS, readBirthDate, toISODate } from '../utils/birthDate.js';
@@ -51,6 +51,10 @@ export function useEditProfile(navigation) {
     // Se comparan los tiempos: son objetos Date distintos aunque valgan igual
     birthDate?.getTime() !== readBirthDate(user)?.getTime() ||
     !!photoUri;
+
+  const handleNameChange = (text) => setName(filterName(text));
+  const handleLastNameChange = (text) => setLastName(filterName(text));
+  const handlePhoneChange = (text) => setPhone(filterPhoneChars(text));
 
   const discard = () => {
     setName(user?.name ?? '');
@@ -170,11 +174,11 @@ export function useEditProfile(navigation) {
 
   return {
     name,
-    setName,
+    setName: handleNameChange,
     lastName,
-    setLastName,
+    setLastName: handleLastNameChange,
     phone,
-    setPhone,
+    setPhone: handlePhoneChange,
     birthDate,
     setBirthDate,
     pickerOpen,

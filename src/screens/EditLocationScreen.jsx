@@ -12,26 +12,10 @@ export default function EditLocationScreen({ navigation, route }) {
   const styles = createStyles(colors);
   const address = route?.params?.address;
   const {
+    isEditing,
     fullName, setFullName, addressLine, setAddressLine, municipality, setMunicipality,
     department, setDepartment, phone, setPhone, isDefault, setIsDefault, saving, error, handleSave,
   } = useEditLocation(navigation, address);
-
-  if (!address) {
-    return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={22} color={colors.white} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Editar Dirección</Text>
-          <View style={{ width: 22 }} />
-        </View>
-        <View style={styles.centered}>
-          <Text style={styles.stateText}>No se encontró esta dirección.</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -39,7 +23,9 @@ export default function EditLocationScreen({ navigation, route }) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={22} color={colors.white} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Editar Dirección</Text>
+        <Text style={styles.headerTitle}>
+          {isEditing ? 'Editar Dirección' : 'Nueva Dirección'}
+        </Text>
         <View style={{ width: 22 }} />
       </View>
 
@@ -101,8 +87,6 @@ const createStyles = (colors) =>
       alignItems: 'center',
     },
     headerTitle: { color: colors.white, fontSize: 17, fontWeight: '700' },
-    centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    stateText: { fontSize: 13, color: colors.placeholder },
     content: { padding: 20, paddingBottom: 24 },
     label: { fontSize: 12, color: colors.placeholder, marginBottom: 6, marginTop: 14 },
     input: {

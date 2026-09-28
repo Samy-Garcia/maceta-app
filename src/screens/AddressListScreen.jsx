@@ -4,8 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { useAddressList } from '../hooks/useAddressList.jsx';
 
-// Direcciones reales de la cuenta: se llenan al elegir una ubicación en el
-// mapa de OpenStreetMap (desde el carrito o desde "Agregar nueva dirección" aquí).
+// Direcciones reales de la cuenta: se escriben a mano, aquí o al momento de
+// confirmar un pedido.
 export default function AddressListScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -59,7 +59,7 @@ export default function AddressListScreen({ navigation }) {
         ListFooterComponent={
           <TouchableOpacity style={styles.addButton} onPress={goToAddAddress}>
             <Ionicons name="add" size={18} color={colors.primary} />
-            <Text style={styles.addButtonText}>Agregar nueva dirección (mapa)</Text>
+            <Text style={styles.addButtonText}>Agregar nueva dirección</Text>
           </TouchableOpacity>
         }
       />

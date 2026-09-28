@@ -76,7 +76,7 @@ export function useProfile(navigation) {
     goToAddCard: go('EditCard'),
     goToEditCard: (card) => navigation.navigate('EditCard', { cardId: card.id }),
     goToAddresses: go('AddressList'),
-    goToAddAddress: go('MapLocation', { returnTo: 'Profile' }),
+    goToAddAddress: go('EditLocation'),
     goToEditAddress: (address) => navigation.navigate('EditLocation', { address }),
     goToOrders: go('Orders'),
     goToWishlist: go('Wishlist'),

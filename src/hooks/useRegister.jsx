@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { apiFetch } from '../services/api.js';
-import { EMAIL_REGEX, NAME_REGEX, PASSWORD_HINT, PASSWORD_REGEX, PHONE_REGEX } from '../utils/validators.js';
+import {
+  EMAIL_REGEX,
+  filterCode,
+  filterName,
+  NAME_REGEX,
+  PASSWORD_HINT,
+  PASSWORD_REGEX,
+  PHONE_REGEX,
+} from '../utils/validators.js';
 import { useGoogleAuth } from './useGoogleAuth.jsx';
 
 // formulario de creación de cuenta (POST /api/registerClient -> envía código de verificación al correo)
@@ -16,6 +24,10 @@ export function useRegister(navigation) {
   const [referralCode, setReferralCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleNameChange = (text) => setName(filterName(text));
+  const handleLastNameChange = (text) => setLastName(filterName(text));
+  const handleReferralChange = (text) => setReferralCode(filterCode(text));
 
   const validate = () => {
     if (!name || !lastName || !email || !phone || !address || !password || !confirmPassword) {
@@ -76,9 +88,9 @@ export function useRegister(navigation) {
 
   return {
     name,
-    setName,
+    setName: handleNameChange,
     lastName,
-    setLastName,
+    setLastName: handleLastNameChange,
     email,
     setEmail,
     phone,
@@ -90,7 +102,7 @@ export function useRegister(navigation) {
     confirmPassword,
     setConfirmPassword,
     referralCode,
-    setReferralCode,
+    setReferralCode: handleReferralChange,
     loading,
     error,
     handleRegister,

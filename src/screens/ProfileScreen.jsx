@@ -184,7 +184,7 @@ export default function ProfileScreen({ navigation }) {
         ) : (
           <TouchableOpacity style={styles.emptyCard} onPress={goToAddAddress} activeOpacity={0.8}>
             <Ionicons name="location-outline" size={20} color={colors.placeholder} />
-            <Text style={styles.emptyText}>Marca tu dirección en el mapa para tus envíos</Text>
+            <Text style={styles.emptyText}>Agrega una dirección para tus envíos</Text>
           </TouchableOpacity>
         )}
 

@@ -30,14 +30,15 @@ export default function RegisterScreen({ navigation }) {
     <AuthCard scroll>
       <AuthHeading title="Crear Cuenta" subtitle="Únete al club de botánica artesanal de El Salvador" />
 
-      <FormInput label="Nombre" placeholder="Ingresa tu nombre" value={name} onChangeText={setName} />
-      <FormInput label="Apellido" placeholder="Ingresa tu apellido" value={lastName} onChangeText={setLastName} />
+      <FormInput label="Nombre" placeholder="Ingresa tu nombre" value={name} onChangeText={setName} maxLength={50} />
+      <FormInput label="Apellido" placeholder="Ingresa tu apellido" value={lastName} onChangeText={setLastName} maxLength={50} />
       <FormInput
         label="Correo Electrónico"
         placeholder="ejemplo@correo.com"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
+        maxLength={100}
       />
       <FormInput
         label="Teléfono"
@@ -47,7 +48,7 @@ export default function RegisterScreen({ navigation }) {
         keyboardType="phone-pad"
         maxLength={12}
       />
-      <FormInput label="Dirección" placeholder="Ingresa tu dirección" value={address} onChangeText={setAddress} />
+      <FormInput label="Dirección" placeholder="Ingresa tu dirección" value={address} onChangeText={setAddress} maxLength={150} />
       <FormInput
         label="Contraseña"
         placeholder="Crea una contraseña segura"
@@ -67,6 +68,7 @@ export default function RegisterScreen({ navigation }) {
         placeholder="Ej. M503-A1B2C3"
         value={referralCode}
         onChangeText={setReferralCode}
+        maxLength={20}
         autoCapitalize="characters"
       />
 

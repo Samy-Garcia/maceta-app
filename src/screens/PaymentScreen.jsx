@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -13,32 +12,26 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import OsmMapPicker from '../components/OsmMapPicker.jsx';
 import ErrorText from '../components/ErrorText.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { SERIF } from '../theme/typography.js';
 import { usePayment } from '../hooks/usePayment.jsx';
-import { useShippingMap } from '../hooks/useShippingMap.jsx';
 
 export default function PaymentScreen({ navigation }) {
   const { colors, isDark } = useTheme();
   const styles = createStyles(colors, isDark);
-  const mapRef = useRef(null);
   const {
     items, itemLabel, fullName, setFullName, phone, setPhone,
-    addressText, setAddressText, deliveryMode, setDeliveryMode, isPickup,
+    addressLine, setAddressLine, municipality, setMunicipality,
+    department, setDepartment, reference, setReference,
+    deliveryMode, setDeliveryMode, isPickup,
     pickupLocations, pickup, selectedPickup, setSelectedPickup,
-    savedAddresses, savedVisible, setSavedVisible, useSavedAddress, recalculating,
-    shippingInfo, goToChangeAddress,
+    savedAddresses, savedVisible, setSavedVisible, useSavedAddress,
     couponInput, setCouponInput, appliedCoupon, couponError, applyCoupon,
     subtotal, discount, shippingCost, total,
-    freeShippingFrom, qualifiesForFreeShipping,
+    freeShippingFrom, qualifiesForFreeShipping, missingForFree,
     paying, error, pay,
   } = usePayment(navigation);
-
-  // El mapa embebido comparte la misma lógica del mapa a pantalla completa:
-  // marca el punto, geocodifica dentro del WebView y calcula la ruta real.
-  const map = useShippingMap(navigation, 'Payment');
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -131,25 +124,17 @@ export default function PaymentScreen({ navigation }) {
             </View>
           ) : (
             <>
-              <View style={styles.addressButtons}>
+              {savedAddresses.length > 0 ? (
                 <TouchableOpacity
-                  style={styles.addressButton}
-                  onPress={goToChangeAddress}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="location-outline" size={15} color={colors.text} />
-                  <Text style={styles.addressButtonText}>Abrir mapa completo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.addressButton, !savedAddresses.length && styles.addressButtonDisabled]}
+                  style={styles.savedButton}
                   onPress={() => setSavedVisible(true)}
-                  disabled={!savedAddresses.length}
                   activeOpacity={0.8}
                 >
                   <Ionicons name="bookmark-outline" size={15} color={colors.text} />
-                  <Text style={styles.addressButtonText}>Dirección guardada</Text>
+                  <Text style={styles.savedButtonText}>Usar una dirección guardada</Text>
+                  <Ionicons name="chevron-down" size={14} color={colors.placeholder} />
                 </TouchableOpacity>
-              </View>
+              ) : null}
 
               {qualifiesForFreeShipping ? (
                 <View style={styles.freeBadge}>
@@ -160,51 +145,59 @@ export default function PaymentScreen({ navigation }) {
                 <View style={styles.freeBadge}>
                   <Ionicons name="information-circle-outline" size={13} color={colors.primary} />
                   <Text style={styles.freeBadgeText}>
-                    Envío gratis en compras desde ${freeShippingFrom.toFixed(2)}
+                    Agrega ${missingForFree.toFixed(2)} más y el envío te sale gratis
                   </Text>
                 </View>
               ) : null}
 
-              <View style={styles.mapBox}>
-                <OsmMapPicker
-                  ref={mapRef}
-                  storeLat={map.store.lat}
-                  storeLng={map.store.lng}
-                  onSelect={map.selectLocation}
-                  onGeocode={map.applyGeocode}
-                />
-              </View>
-              <Text style={styles.mapHint}>
-                Toca el mapa para marcar tu dirección exacta de entrega.
-              </Text>
-
-              {map.loading ? (
-                <Text style={styles.mapCalc}>Calculando ruta...</Text>
-              ) : map.route ? (
-                <TouchableOpacity style={styles.mapResult} onPress={map.confirm} activeOpacity={0.85}>
-                  <Ionicons name="checkmark-circle" size={15} color={colors.primary} />
-                  <Text style={styles.mapResultText} numberOfLines={2}>
-                    {(map.route.distanciaMetros / 1000).toFixed(2)} km ·{' '}
-                    {map.shippingCost > 0 ? '$' + map.shippingCost.toFixed(2) : 'Envío gratis'} — toca
-                    para usar este punto
-                  </Text>
-                </TouchableOpacity>
-              ) : map.error ? (
-                <Text style={styles.mapError}>{map.error}</Text>
-              ) : null}
-
-              <Text style={styles.label}>DIRECCIÓN DE ENVÍO</Text>
+              <Text style={styles.label}>DIRECCIÓN DE ENTREGA</Text>
               <TextInput
-                style={styles.input}
-                value={addressText}
-                onChangeText={setAddressText}
-                placeholder="Ej: Res. Las Flores, calle 3, casa #12, San Salvador"
+                style={[styles.input, styles.inputMultiline]}
+                value={addressLine}
+                onChangeText={setAddressLine}
+                maxLength={150}
+                placeholder="Calle, número de casa y colonia"
                 placeholderTextColor={colors.placeholder}
                 multiline
               />
-              {recalculating ? (
-                <Text style={styles.mapCalc}>Recalculando envío...</Text>
-              ) : null}
+
+              <View style={styles.doubleRow}>
+                <View style={styles.doubleCol}>
+                  <Text style={styles.label}>MUNICIPIO</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={municipality}
+                    onChangeText={setMunicipality}
+                    maxLength={50}
+                    placeholder="San Salvador"
+                    placeholderTextColor={colors.placeholder}
+                  />
+                </View>
+                <View style={styles.doubleCol}>
+                  <Text style={styles.label}>DEPARTAMENTO</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={department}
+                    onChangeText={setDepartment}
+                    maxLength={50}
+                    placeholder="San Salvador"
+                    placeholderTextColor={colors.placeholder}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.couponHead}>
+                <Text style={styles.label}>PUNTO DE REFERENCIA</Text>
+                <Text style={styles.optional}>Opcional</Text>
+              </View>
+              <TextInput
+                style={styles.input}
+                value={reference}
+                onChangeText={setReference}
+                maxLength={120}
+                placeholder="Ej: portón negro, frente a la tienda"
+                placeholderTextColor={colors.placeholder}
+              />
             </>
           )}
 
@@ -213,6 +206,7 @@ export default function PaymentScreen({ navigation }) {
             style={styles.input}
             value={fullName}
             onChangeText={setFullName}
+            maxLength={50}
             placeholder="Nombre y apellido"
             placeholderTextColor={colors.placeholder}
           />
@@ -236,6 +230,7 @@ export default function PaymentScreen({ navigation }) {
               style={styles.couponInput}
               value={couponInput}
               onChangeText={setCouponInput}
+              maxLength={20}
               placeholder="Ej: M503-A1B2C3"
               placeholderTextColor={colors.placeholder}
               autoCapitalize="characters"
@@ -314,9 +309,9 @@ export default function PaymentScreen({ navigation }) {
             <Text style={styles.deliverNoteText}>
               {isPickup
                 ? 'Se retira en: ' + (pickup ? pickup.name : 'punto por elegir')
-                : shippingInfo
-                ? 'Se entregará en: ' + (shippingInfo.municipality || 'la dirección marcada')
-                : 'Marca la dirección para calcular el envío.'}
+                : municipality.trim()
+                ? 'Se entregará en: ' + municipality.trim()
+                : 'Escribe tu dirección para completar el pedido.'}
             </Text>
           </View>
         </View>
@@ -447,20 +442,17 @@ const createStyles = (colors, isDark) =>
     radioActive: { borderColor: colors.primary },
     radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
 
-    addressButtons: { flexDirection: 'row', marginTop: 14 },
-    addressButton: {
-      flex: 1,
+    savedButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      height: 44,
+      height: 46,
+      paddingHorizontal: 14,
       borderRadius: 12,
-      marginRight: 8,
+      marginTop: 14,
       borderWidth: 1,
       borderColor: isDark ? colors.border : '#E4E8E4',
     },
-    addressButtonDisabled: { opacity: 0.45 },
-    addressButtonText: { fontSize: 12, fontWeight: '700', color: colors.text, marginLeft: 6 },
+    savedButtonText: { flex: 1, fontSize: 12.5, fontWeight: '700', color: colors.text, marginLeft: 8 },
 
     freeBadge: {
       flexDirection: 'row',
@@ -472,27 +464,6 @@ const createStyles = (colors, isDark) =>
       marginTop: 12,
     },
     freeBadgeText: { flex: 1, fontSize: 11.5, fontWeight: '600', color: colors.primary, marginLeft: 7 },
-
-    mapBox: {
-      height: 220,
-      borderRadius: 16,
-      overflow: 'hidden',
-      marginTop: 12,
-      backgroundColor: colors.card,
-    },
-    mapHint: { fontSize: 11, color: colors.placeholder, textAlign: 'center', marginTop: 8 },
-    mapCalc: { fontSize: 11.5, color: colors.primary, marginTop: 8 },
-    mapError: { fontSize: 11.5, color: colors.maroon, marginTop: 8 },
-    mapResult: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: colors.primarySoft,
-      borderRadius: 12,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      marginTop: 10,
-    },
-    mapResultText: { flex: 1, fontSize: 11.5, fontWeight: '600', color: colors.primary, marginLeft: 7 },
 
     label: {
       fontSize: 9.5,
@@ -513,6 +484,10 @@ const createStyles = (colors, isDark) =>
       color: colors.text,
       backgroundColor: isDark ? colors.surface : '#F7F9F8',
     },
+    inputMultiline: { minHeight: 70, textAlignVertical: 'top' },
+
+    doubleRow: { flexDirection: 'row', justifyContent: 'space-between' },
+    doubleCol: { width: '48%' },
 
     couponHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     optional: { fontSize: 10.5, color: colors.placeholder, marginTop: 18 },

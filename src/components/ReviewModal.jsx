@@ -112,6 +112,7 @@ export default function ReviewModal({ order, onClose, onSubmit, saving }) {
               multiline
               numberOfLines={4}
               textAlignVertical="top"
+              maxLength={500}
             />
           </ScrollView>
 

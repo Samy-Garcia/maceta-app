@@ -9,7 +9,6 @@ import VerificationScreen from '../screens/VerificationScreen.jsx';
 import NewPasswordScreen from '../screens/NewPasswordScreen.jsx';
 
 import HomeScreen from '../screens/HomeScreen.jsx';
-import MapLocationScreen from '../screens/MapLocationScreen.jsx';
 import AddressListScreen from '../screens/AddressListScreen.jsx';
 import WishlistScreen from '../screens/WishlistScreen.jsx';
 
@@ -62,7 +61,6 @@ export default function AppNavigator() {
       <Stack.Screen name="OrderConfirmed" component={OrderConfirmedScreen} />
 
       <Stack.Screen name="AddressList" component={AddressListScreen} />
-      <Stack.Screen name="MapLocation" component={MapLocationScreen} />
       <Stack.Screen name="EditLocation" component={EditLocationScreen} />
 
       <Stack.Screen name="Profile" component={ProfileScreen} />

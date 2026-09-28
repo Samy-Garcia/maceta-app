@@ -112,6 +112,7 @@ export default function EditCardScreen({ navigation, route }) {
             style={styles.input}
             value={holder}
             onChangeText={setHolder}
+            maxLength={50}
             placeholder="Ej. Lissy Erazo"
             placeholderTextColor={colors.placeholder}
             autoCapitalize="words"

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCards, saveCards, withSingleDefault } from '../services/cardsStorage.js';
 import { detectCardBrand } from '../utils/cardBrand.js';
+import { filterDigits, filterName, isExpiryExpired, NAME_REGEX } from '../utils/validators.js';
 import { useToast } from '../context/ToastContext.jsx';
 
 const EXPIRY_REGEX = /^(0[1-9]|1[0-2])\/\d{2}$/;
@@ -46,6 +47,10 @@ export function useEditCard(navigation, cardId) {
     setCardNumber(grouped);
   };
 
+  // El titular de una tarjeta es un nombre: nada de números ni símbolos
+  const handleHolderChange = (text) => setHolder(filterName(text));
+  const handleCvvChange = (text) => setCvv(filterDigits(text).slice(0, 4));
+
   const handleExpiryChange = (text) => {
     const digits = text.replace(/\D/g, '').slice(0, 4);
     const formatted = digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
@@ -64,12 +69,20 @@ export function useEditCard(navigation, cardId) {
       setError('Completa todos los campos.');
       return;
     }
+    if (!NAME_REGEX.test(holder.trim())) {
+      setError('El nombre del titular solo debe contener letras (2-50 caracteres).');
+      return;
+    }
     if (!isUntouchedMasked && rawDigits.length !== 16) {
       setError('Ingresa los 16 dígitos de la tarjeta.');
       return;
     }
     if (!EXPIRY_REGEX.test(expiry.trim())) {
       setError('La fecha de vencimiento debe tener el formato MM/AA.');
+      return;
+    }
+    if (isExpiryExpired(expiry)) {
+      setError('Esa tarjeta ya está vencida.');
       return;
     }
     if (!/^\d{3,4}$/.test(cvv) && !isUntouchedMasked) {
@@ -126,11 +139,11 @@ export function useEditCard(navigation, cardId) {
     cardNumber,
     handleCardNumberChange,
     holder,
-    setHolder,
+    setHolder: handleHolderChange,
     expiry,
     handleExpiryChange,
     cvv,
-    setCvv,
+    setCvv: handleCvvChange,
     isDefault,
     setIsDefault,
     previewLast4,

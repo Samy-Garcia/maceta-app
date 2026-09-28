@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { apiFetch } from '../services/api.js';
-import { getShippingInfo, saveShippingInfo, clearShippingInfo } from '../services/shippingInfoStorage.js';
 import { useAuth } from './AuthContext.jsx';
 
 const CartContext = createContext(null);
@@ -9,28 +8,14 @@ const emptyCart = { products: [], total: 0 };
 
 // Carrito real del cliente (GET /api/cart/mine). itemCount es la suma de las
 // cantidades de todos los productos, para el badge de la barra inferior.
+//
+// La dirección de envío ya no vive aquí: se escribe a mano en la pantalla de
+// pago y viaja directo en el checkout, así que no hay nada que guardar entre
+// pantallas.
 export function CartProvider({ children }) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [cart, setCart] = useState(emptyCart);
   const [loading, setLoading] = useState(false);
-  // Envío elegido en el mapa para ESTE pedido (no se guarda en el backend:
-  // el modelo de Address no tiene coordenadas, así que se calcula al vuelo
-  // igual que en la tienda web). Se persiste en AsyncStorage para que no se
-  // pierda si la app se recarga entre elegir la ubicación y pagar.
-  const [shippingInfo, setShippingInfoState] = useState(null);
-  // true en cuanto terminó de intentar recuperar el envío guardado (aunque
-  // no hubiera ninguno) — evita que la pantalla de pago juzgue "no hay
-  // dirección" mientras todavía está cargando desde el dispositivo.
-  const [shippingInfoLoaded, setShippingInfoLoaded] = useState(false);
-
-  const setShippingInfo = useCallback(
-    (info) => {
-      setShippingInfoState(info);
-      if (info) saveShippingInfo(user?.email, info);
-      else clearShippingInfo(user?.email);
-    },
-    [user?.email]
-  );
 
   const refreshCart = useCallback(async () => {
     setLoading(true);
@@ -45,20 +30,9 @@ export function CartProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      refreshCart();
-      setShippingInfoLoaded(false);
-      getShippingInfo(user?.email)
-        .then((stored) => {
-          if (stored) setShippingInfoState(stored);
-        })
-        .finally(() => setShippingInfoLoaded(true));
-    } else {
-      setCart(emptyCart);
-      setShippingInfoState(null);
-      setShippingInfoLoaded(true);
-    }
-  }, [isAuthenticated, user?.email, refreshCart]);
+    if (isAuthenticated) refreshCart();
+    else setCart(emptyCart);
+  }, [isAuthenticated, refreshCart]);
 
   const addToCart = useCallback(async (productId, productType, quantity = 1) => {
     const data = await apiFetch('/api/cart/add', {
@@ -81,17 +55,25 @@ export function CartProvider({ children }) {
     setCart(data);
   }, []);
 
+  // shippingCost va SIEMPRE: el backend desplegado lo exige para cerrar el
+  // pedido (si falta responde "Debes marcar tu ubicación en el mapa para
+  // calcular el envío"). Es el mismo campo que manda la tienda web, solo que
+  // aquí el monto sale de la tarifa configurada y no de un mapa.
   const checkout = useCallback(
-    async (shippingAddress, contactPhone, couponCode) => {
+    async (shippingAddress, contactPhone, couponCode, shippingCost = 0) => {
       const confirmed = await apiFetch('/api/cart/checkout', {
         method: 'POST',
-        body: JSON.stringify({ shippingAddress, contactPhone, couponCode: couponCode || undefined }),
+        body: JSON.stringify({
+          shippingAddress,
+          contactPhone,
+          couponCode: couponCode || undefined,
+          shippingCost: Number(shippingCost) || 0,
+        }),
       });
       await refreshCart(); // el carrito activo confirmado pasa a "Pendiente"; esto trae uno nuevo vacío
-      setShippingInfo(null);
       return confirmed;
     },
-    [refreshCart, setShippingInfo]
+    [refreshCart]
   );
 
   const itemCount = (cart?.products || []).reduce((sum, item) => sum + (item.quantity || 0), 0);
@@ -100,7 +82,6 @@ export function CartProvider({ children }) {
     <CartContext.Provider
       value={{
         cart, itemCount, loading, refreshCart, addToCart, updateQuantity, removeItem, checkout,
-        shippingInfo, setShippingInfo, shippingInfoLoaded,
       }}
     >
       {children}

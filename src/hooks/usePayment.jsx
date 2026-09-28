@@ -1,31 +1,40 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../services/api.js';
-import { computeShippingCost, fetchRoute, fetchStoreConfig } from '../services/shipping.js';
-import { getAddressCoords } from '../services/addressCoords.js';
+import { computeShippingCost, fetchStoreConfig } from '../services/shipping.js';
 import { useCart } from '../context/CartContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { typeLabel } from '../utils/productTypes.js';
+import { filterCode, filterName, filterPhoneChars, NAME_REGEX, PHONE_REGEX } from '../utils/validators.js';
 
-// Pantalla de pago: datos del cliente, dirección (mapa, dirección guardada o
-// retiro en tienda), cupón real de tus canjes de lealtad y confirmación del
-// pedido. Sin pasarela de pago: el backend no tiene ninguna, así que
-// "Confirmar pedido" llama directo a POST /api/cart/checkout.
+// Arma el texto que recibe el backend (shippingAddress es un string)
+const composeAddress = ({ addressLine, municipality, department, reference }) =>
+  [addressLine.trim(), municipality.trim(), department.trim(), reference.trim()]
+    .filter(Boolean)
+    .join(', ');
+
+// Pantalla de pago: datos de quien recibe, dirección escrita a mano (o una
+// guardada, o retiro en tienda), cupón real de tus canjes de lealtad y
+// confirmación del pedido. Sin pasarela de pago: el backend no tiene ninguna,
+// así que "Confirmar pedido" llama directo a POST /api/cart/checkout.
 export function usePayment(navigation) {
-  const { cart, shippingInfo, shippingInfoLoaded, checkout, setShippingInfo } = useCart();
+  const { cart, checkout } = useCart();
   const { user } = useAuth();
 
   const [fullName, setFullName] = useState([user?.name, user?.lastName].filter(Boolean).join(' '));
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [email] = useState(user?.email ?? '');
 
-  // El backend recibe la dirección como texto, así que se puede afinar a mano
-  // después de marcarla en el mapa (número de casa, referencias, etc).
-  const [addressText, setAddressText] = useState(shippingInfo?.address || '');
+  // Dirección escrita a mano. Se guarda por partes porque así la pide el
+  // modelo de direcciones del backend y así se puede reutilizar después.
+  const [addressLine, setAddressLine] = useState('');
+  const [municipality, setMunicipality] = useState('');
+  const [department, setDepartment] = useState('');
+  const [reference, setReference] = useState('');
+
   const [deliveryMode, setDeliveryMode] = useState('delivery'); // 'delivery' | 'pickup'
   const [selectedPickup, setSelectedPickup] = useState(0);
   const [config, setConfig] = useState(null);
   const [savedVisible, setSavedVisible] = useState(false);
-  const [recalculating, setRecalculating] = useState(false);
 
   const [couponInput, setCouponInput] = useState('');
   const [redemptions, setRedemptions] = useState([]);
@@ -42,55 +51,33 @@ export function usePayment(navigation) {
     fetchStoreConfig().then(setConfig).catch(() => {});
   }, []);
 
-  // Cuando vuelves del mapa, el texto de la dirección se rellena solo
+  // Si el cliente ya tiene una dirección guardada, se rellena sola la primera vez
+  const savedAddresses = user?.addresses || [];
   useEffect(() => {
-    if (shippingInfo?.address) {
-      setAddressText(shippingInfo.address);
-      setError((prev) => (prev.startsWith('No encontramos') || prev.startsWith('Todavía')) ? '' : prev);
-    }
-  }, [shippingInfo?.address]);
+    if (addressLine || !savedAddresses.length) return;
+    const preferred = savedAddresses.find((a) => a.isDefault) || savedAddresses[0];
+    setAddressLine(preferred.addressLine || '');
+    setMunicipality(preferred.municipality || '');
+    setDepartment(preferred.department || '');
+  }, [savedAddresses.length]);
 
   const pickupLocations = (config?.pickupLocations || []).filter((place) => place.isActive !== false);
   const pickup = pickupLocations[selectedPickup] || null;
-  const savedAddresses = user?.addresses || [];
 
-  const goToChangeAddress = () => navigation.navigate('MapLocation', { returnTo: 'Payment' });
-
-  // Elegir una dirección ya guardada. Si tenemos sus coordenadas cacheadas
-  // (de cuando se marcó en el mapa), se recalcula el envío real; si no, hay
-  // que pasar por el mapa para poder cobrarlo.
-  const useSavedAddress = async (address) => {
+  const useSavedAddress = (address) => {
     setSavedVisible(false);
-    setAddressText(address.addressLine || '');
+    setAddressLine(address.addressLine || '');
+    setMunicipality(address.municipality || '');
+    setDepartment(address.department || '');
     setError('');
-
-    const coordsMap = await getAddressCoords(user?.email);
-    const coords = coordsMap?.[address._id];
-    if (!coords || !config?.storeLat) {
-      setShippingInfo(null);
-      setError('Marca esa dirección en el mapa para poder calcular el envío.');
-      return;
-    }
-
-    setRecalculating(true);
-    try {
-      const route = await fetchRoute({ lat: config.storeLat, lng: config.storeLng }, coords);
-      setShippingInfo({
-        address: address.addressLine || '',
-        municipality: address.municipality || '',
-        department: address.department || '',
-        coords,
-        distanceMeters: route.distanciaMetros,
-        durationSeconds: route.duracionSegundos,
-        shippingCost: computeShippingCost(config, route, cart.total || 0),
-      });
-    } catch {
-      setShippingInfo(null);
-      setError('No se pudo calcular el envío a esa dirección. Márcala de nuevo en el mapa.');
-    } finally {
-      setRecalculating(false);
-    }
   };
+
+  // Se bloquea al escribir en vez de avisar hasta el final
+  const handleNameChange = (text) => setFullName(filterName(text));
+  const handlePhoneChange = (text) => setPhone(filterPhoneChars(text));
+  const handleCouponChange = (text) => setCouponInput(filterCode(text));
+  const handleMunicipalityChange = (text) => setMunicipality(filterName(text));
+  const handleDepartmentChange = (text) => setDepartment(filterName(text));
 
   const applyCoupon = () => {
     const code = couponInput.trim().toUpperCase();
@@ -114,16 +101,15 @@ export function usePayment(navigation) {
       : 0;
 
   const isPickup = deliveryMode === 'pickup';
-  const shippingCost = isPickup
-    ? 0
-    : appliedCoupon?.type === 'shipping'
-    ? 0
-    : shippingInfo?.shippingCost || 0;
+  const baseShipping = computeShippingCost(config, subtotal);
+  const shippingCost = isPickup || appliedCoupon?.type === 'shipping' ? 0 : baseShipping;
   const total = Number((subtotal - discount + shippingCost).toFixed(2));
 
   const freeShippingFrom =
     typeof config?.freeShippingMinAmount === 'number' ? config.freeShippingMinAmount : null;
   const qualifiesForFreeShipping = freeShippingFrom != null && subtotal >= freeShippingFrom;
+  const missingForFree =
+    freeShippingFrom != null ? Number(Math.max(0, freeShippingFrom - subtotal).toFixed(2)) : null;
 
   const pay = async () => {
     setError('');
@@ -133,7 +119,15 @@ export function usePayment(navigation) {
       return;
     }
     if (!fullName.trim() || !phone.trim()) {
-      setError('Completa tu nombre y teléfono.');
+      setError('Completa el nombre y el teléfono de quien recibe.');
+      return;
+    }
+    if (!NAME_REGEX.test(fullName.trim())) {
+      setError('El nombre de quien recibe solo debe contener letras.');
+      return;
+    }
+    if (!PHONE_REGEX.test(phone.trim())) {
+      setError('El teléfono debe tener entre 8 y 12 dígitos (puede incluir guiones).');
       return;
     }
 
@@ -145,42 +139,42 @@ export function usePayment(navigation) {
       }
       shippingAddress = `Retiro en tienda: ${pickup.name} — ${pickup.address}`;
     } else {
-      if (!addressText.trim()) {
-        if (!shippingInfoLoaded) {
-          setError('Todavía estamos cargando tu dirección de envío, intenta de nuevo en un segundo.');
-          return;
-        }
-        setError('Escribe o marca en el mapa la dirección de entrega.');
+      if (addressLine.trim().length < 5) {
+        setError('Escribe la dirección de entrega (calle, número de casa, colonia).');
         return;
       }
-      if (!shippingInfo) {
-        setError('Marca la dirección en el mapa para calcular el costo de envío.');
-        goToChangeAddress();
+      if (!municipality.trim() || !department.trim()) {
+        setError('Completa el municipio y el departamento.');
         return;
       }
-      shippingAddress = addressText.trim();
+      shippingAddress = composeAddress({ addressLine, municipality, department, reference });
     }
 
     setPaying(true);
     try {
-      const destination = {
-        municipality: shippingInfo?.municipality || '',
-        department: shippingInfo?.department || '',
-      };
       const confirmed = await checkout(
         shippingAddress,
         phone.trim(),
-        appliedCoupon ? couponInput.trim() : undefined
+        appliedCoupon ? couponInput.trim() : undefined,
+        shippingCost
       );
-      setShippingInfo(null);
       navigation.navigate('OrderConfirmed', {
         order: confirmed,
         breakdown: { subtotal, discount, shippingCost, total },
-        destination,
+        destination: { municipality: municipality.trim(), department: department.trim() },
         isPickup,
       });
     } catch (err) {
-      setError(err.message || 'No se pudo confirmar tu pedido.');
+      // Se marca de dónde viene el mensaje: la app ya no pide ubicación en
+      // ningún lado, así que cualquier queja sobre eso sale del servidor y
+      // hay que arreglarla allá, no aquí.
+      const fromServer = err?.status > 0;
+      console.warn('[checkout] rechazado', err?.status, err?.message, { shippingAddress });
+      setError(
+        fromServer
+          ? 'El servidor rechazó el pedido (' + err.status + '): ' + err.message
+          : err.message || 'No se pudo confirmar tu pedido.'
+      );
     } finally {
       setPaying(false);
     }
@@ -190,12 +184,18 @@ export function usePayment(navigation) {
     items,
     itemLabel,
     fullName,
-    setFullName,
+    setFullName: handleNameChange,
     phone,
-    setPhone,
+    setPhone: handlePhoneChange,
     email,
-    addressText,
-    setAddressText,
+    addressLine,
+    setAddressLine,
+    municipality,
+    setMunicipality: handleMunicipalityChange,
+    department,
+    setDepartment: handleDepartmentChange,
+    reference,
+    setReference,
     deliveryMode,
     setDeliveryMode,
     isPickup,
@@ -207,20 +207,19 @@ export function usePayment(navigation) {
     savedVisible,
     setSavedVisible,
     useSavedAddress,
-    recalculating,
-    shippingInfo,
-    goToChangeAddress,
     couponInput,
-    setCouponInput,
+    setCouponInput: handleCouponChange,
     appliedCoupon,
     couponError,
     applyCoupon,
     subtotal,
     discount,
     shippingCost,
+    baseShipping,
     total,
     freeShippingFrom,
     qualifiesForFreeShipping,
+    missingForFree,
     paying,
     error,
     pay,

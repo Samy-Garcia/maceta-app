@@ -2,30 +2,31 @@ import { useCart } from '../context/CartContext.jsx';
 import { typeLabel } from '../utils/productTypes.js';
 import { useStoreConfig } from './useStoreConfig.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { computeShippingCost } from '../services/shipping.js';
 
-
-// Pantalla del carrito: cantidades, eliminar y envío real (calculado en el
-// mapa de OpenStreetMap). El pago en sí (datos del cliente, cupón, checkout)
-// vive en PaymentScreen — "Confirmar Orden" solo valida que haya productos
-// y una dirección elegida antes de pasar para allá.
+// Pantalla del carrito: cantidades, eliminar y el envío estimado con la
+// tarifa real que tiene configurada la tienda. El pago en sí (dirección,
+// datos de quien recibe, cupón y checkout) vive en PaymentScreen.
 export function useCartScreen(navigation) {
-  const { cart, loading, updateQuantity, removeItem, shippingInfo } = useCart();
-  const { freeShippingFrom } = useStoreConfig();
+  const { cart, loading, updateQuantity, removeItem } = useCart();
+  const { config, freeShippingFrom } = useStoreConfig();
   const toast = useToast();
 
   const items = cart.products || [];
   const subtotal = cart.total || 0;
-  const shippingCost = shippingInfo?.shippingCost || 0;
+  // Mismo cálculo que hará el checkout, para que el total no cambie de un
+  // paso a otro: tarifa fija de la tienda, gratis desde el mínimo configurado.
+  const shippingCost = computeShippingCost(config, subtotal);
   const total = Number((subtotal + shippingCost).toFixed(2));
 
   // Cuánto falta para el envío gratis real que tiene configurada la tienda
   const qualifiesForFreeShipping = freeShippingFrom != null && subtotal >= freeShippingFrom;
   const missingForFreeShipping =
     freeShippingFrom != null ? Number(Math.max(0, freeShippingFrom - subtotal).toFixed(2)) : null;
-  const freeShippingProgress =
-    freeShippingFrom ? Math.min(1, subtotal / freeShippingFrom) : 0;
+  const freeShippingProgress = freeShippingFrom ? Math.min(1, subtotal / freeShippingFrom) : 0;
 
-  const itemLabel = (item) => item.product?.dimensions || item.product?.size || typeLabel(item.productType);
+  const itemLabel = (item) =>
+    item.product?.dimensions || item.product?.size || typeLabel(item.productType);
 
   const changeQuantity = async (item, nextQuantity) => {
     if (nextQuantity < 1) return handleRemove(item);
@@ -53,22 +54,9 @@ export function useCartScreen(navigation) {
     }
   };
 
-  const goToShippingMap = () => navigation.navigate('MapLocation', { returnTo: 'Cart' });
-
-  const goToPayment = async () => {
+  const goToPayment = () => {
     if (!items.length) {
       toast.warning('Carrito vacío', 'Agrega productos antes de continuar.');
-      return;
-    }
-    if (!shippingInfo) {
-      const ok = await toast.confirm({
-        title: 'Falta la dirección de envío',
-        message: 'Marca dónde quieres recibir tu pedido para calcular el envío.',
-        confirmLabel: 'Elegir en el mapa',
-        icon: 'location-outline',
-      });
-      if (ok) goToShippingMap();
-      return;
       return;
     }
     navigation.navigate('Payment');
@@ -79,7 +67,6 @@ export function useCartScreen(navigation) {
     loading,
     subtotal,
     shippingCost,
-    shippingInfo,
     total,
     freeShippingFrom,
     qualifiesForFreeShipping,
@@ -88,7 +75,6 @@ export function useCartScreen(navigation) {
     itemLabel,
     changeQuantity,
     handleRemove,
-    goToShippingMap,
     goToPayment,
   };
 }

@@ -1,16 +1,16 @@
 import { useAuth } from '../context/AuthContext.jsx';
 import { deleteAddress } from '../services/addresses.js';
-import { removeAddressCoords } from '../services/addressCoords.js';
 import { useToast } from '../context/ToastContext.jsx';
 
-// Direcciones reales de la cuenta (Client.addresses). Se llenan al elegir
-// una ubicación en el mapa desde el carrito, o agregando una nueva aquí.
+// Direcciones reales de la cuenta (Client.addresses). Se escriben a mano,
+// aquí o al momento de hacer un pedido.
 export function useAddressList(navigation) {
   const { user, refreshUser } = useAuth();
   const toast = useToast();
   const addresses = user?.addresses || [];
 
-  const goToAddAddress = () => navigation.navigate('MapLocation', { returnTo: 'AddressList' });
+  // Sin mapa: la dirección se escribe a mano en el mismo formulario que edita
+  const goToAddAddress = () => navigation.navigate('EditLocation');
   const goToEditAddress = (address) => navigation.navigate('EditLocation', { address });
 
   const handleDelete = async (address) => {
@@ -25,7 +25,6 @@ export function useAddressList(navigation) {
 
     try {
       await deleteAddress(address._id);
-      await removeAddressCoords(user?.email, address._id);
       await refreshUser();
       toast.success('Dirección eliminada');
     } catch (err) {

@@ -114,6 +114,7 @@ export default function EditProfileScreen({ navigation }) {
             style={styles.input}
             value={name}
             onChangeText={setName}
+            maxLength={50}
             placeholder="Tu nombre"
             placeholderTextColor={colors.placeholder}
             autoCapitalize="words"
@@ -127,6 +128,7 @@ export default function EditProfileScreen({ navigation }) {
             style={styles.input}
             value={lastName}
             onChangeText={setLastName}
+            maxLength={50}
             placeholder="Tus apellidos"
             placeholderTextColor={colors.placeholder}
             autoCapitalize="words"
@@ -209,9 +211,7 @@ export default function EditProfileScreen({ navigation }) {
           <TouchableOpacity
             style={styles.linkRow}
             onPress={() =>
-              defaultAddress
-                ? navigation.navigate('EditLocation', { address: defaultAddress })
-                : navigation.navigate('MapLocation', { returnTo: 'EditProfile' })
+              navigation.navigate('EditLocation', defaultAddress ? { address: defaultAddress } : undefined)
             }
             activeOpacity={0.7}
           >
@@ -230,7 +230,7 @@ export default function EditProfileScreen({ navigation }) {
               <Text style={styles.linkNote} numberOfLines={1}>
                 {defaultAddress
                   ? [defaultAddress.addressLine, defaultAddress.municipality].filter(Boolean).join(', ')
-                  : 'Marca tu dirección en el mapa'}
+                  : 'Agrega tu dirección de entrega'}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={17} color={colors.placeholder} />
