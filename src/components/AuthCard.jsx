@@ -2,7 +2,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import ScreenBackground from './ScreenBackground.jsx';
 import Logo from './Logo.jsx';
-import { useTheme } from '../theme/ThemeContext.jsx';
+import { lightColors } from '../theme/palettes.js';
 
 // Tarjeta blanca centrada con el logo arriba, reutilizada por Login, Register,
 // ForgotPassword, Verification y NewPassword.
@@ -15,7 +15,10 @@ export default function AuthCard({
   onBack,
   footerNote,
 }) {
-  const { colors, isDark } = useTheme();
+  // El flujo de autenticación siempre se ve igual al boceto original, sin
+  // importar el modo oscuro que elija el usuario en el resto de la app.
+  const colors = lightColors;
+  const isDark = false;
   const styles = createStyles(colors, isDark);
 
   const header = headerTitle ? (

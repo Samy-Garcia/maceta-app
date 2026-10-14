@@ -8,12 +8,13 @@ import Button from '../components/Button.jsx';
 import GoogleButton from '../components/GoogleButton.jsx';
 import Divider from '../components/Divider.jsx';
 import ErrorText from '../components/ErrorText.jsx';
-import { useTheme } from '../theme/ThemeContext.jsx';
+import { lightColors } from '../theme/palettes.js';
 import { useRegister } from '../hooks/useRegister.jsx';
 import { filterPhoneChars } from '../utils/validators.js';
 
 export default function RegisterScreen({ navigation }) {
-  const { colors } = useTheme();
+  // Fija colores claros: el flujo de autenticación no sigue el modo oscuro.
+  const colors = lightColors;
   const styles = createStyles(colors);
   const {
     name, setName, lastName, setLastName, email, setEmail,

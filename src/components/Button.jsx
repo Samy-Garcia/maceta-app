@@ -1,8 +1,9 @@
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../theme/ThemeContext.jsx';
+import { lightColors } from '../theme/palettes.js';
 
-// Botón principal usado en todos los de autenticación
+// Botón principal usado en todos los de autenticación.
+// Fija colores claros: el flujo de autenticación no sigue el modo oscuro.
 export default function Button({
   label,
   onPress,
@@ -11,7 +12,7 @@ export default function Button({
   icon,
   iconRight,
 }) {
-  const { colors } = useTheme();
+  const colors = lightColors;
   const styles = createStyles(colors);
 
   return (

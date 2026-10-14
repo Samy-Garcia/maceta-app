@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
+import * as ImagePicker from 'expo-image-picker';
 import { fetchProductDetail } from '../services/products.js';
 import { fetchProductReviews } from '../services/reviews.js';
+import { createCustomOrder } from '../services/customOrders.js';
 import { favoriteKey, useProductActions } from './useProductActions.jsx';
+import { productRoute } from '../utils/productTypes.js';
+import { useToast } from '../context/ToastContext.jsx';
 
 // Trae el detalle completo de un producto real (la lista solo manda lo
 // básico) y su calificación real calculada por el backend a partir de
@@ -9,6 +13,7 @@ import { favoriteKey, useProductActions } from './useProductActions.jsx';
 export function useProductDetail(navigation, routeParams = {}) {
   const summary = routeParams.product || {};
   const { favoriteIds, loadFavorites, toggleFavorite, addToCart: addToCartAction } = useProductActions();
+  const toast = useToast();
 
   const [detail, setDetail] = useState(null);
   const [reviews, setReviews] = useState({ average: 0, count: 0, reviews: [] });
@@ -19,6 +24,15 @@ export function useProductDetail(navigation, routeParams = {}) {
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedSize, setSelectedSize] = useState(0);
   const [adding, setAdding] = useState(false);
+
+  // Pedir personalización: solo para macetas que el admin marcó como
+  // personalizables (isCustomizable). Igual que la web: una descripción y
+  // una foto de referencia opcional.
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [customizeDescription, setCustomizeDescription] = useState('');
+  const [customizeImage, setCustomizeImage] = useState(null);
+  const [customizing, setCustomizing] = useState(false);
+  const [customizeError, setCustomizeError] = useState('');
 
   useEffect(() => {
     loadFavorites();
@@ -91,6 +105,54 @@ export function useProductDetail(navigation, routeParams = {}) {
   // Los combos no tienen relacionados: traen la lista de lo que incluye el set
   const comboItems = detail?.items || [];
 
+  const isCustomizable = summary.productType === 'maceta' && !!detail?.isCustomizable;
+
+  const openCustomize = () => {
+    setCustomizeError('');
+    setCustomizeOpen(true);
+  };
+  const closeCustomize = () => setCustomizeOpen(false);
+
+  const pickCustomizeImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      toast.warning('Permiso necesario', 'Activa el permiso de galería para adjuntar una foto de referencia.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+    if (!result.canceled) setCustomizeImage(result.assets[0]);
+  };
+  const clearCustomizeImage = () => setCustomizeImage(null);
+
+  const submitCustomize = async () => {
+    setCustomizeError('');
+    if (!customizeDescription.trim()) {
+      setCustomizeError('Describe qué quieres que le pongamos.');
+      return;
+    }
+    setCustomizing(true);
+    try {
+      await createCustomOrder({
+        productId: product.id || product._id,
+        description: customizeDescription.trim(),
+        referenceImageUri: customizeImage?.uri,
+        referenceImageMimeType: customizeImage?.mimeType,
+      });
+      toast.success('¡Solicitud enviada!', 'Puedes ver su estado en Perfil → Personalizaciones');
+      setCustomizeOpen(false);
+      setCustomizeDescription('');
+      setCustomizeImage(null);
+    } catch (err) {
+      if (err.message?.includes('sesión')) {
+        setCustomizeError('Inicia sesión para pedir una personalización.');
+      } else {
+        setCustomizeError(err.message || 'No se pudo enviar la solicitud.');
+      }
+    } finally {
+      setCustomizing(false);
+    }
+  };
+
   const increment = () => setQuantity((q) => Math.min(q + 1, stock || 1));
   const decrement = () => setQuantity((q) => Math.max(1, q - 1));
 
@@ -107,7 +169,10 @@ export function useProductDetail(navigation, routeParams = {}) {
     }
   };
 
-  const openRelated = (item) => navigation.push('ProductDetail', { product: item });
+  const openRelated = (item) => {
+    const { name, params } = productRoute(item);
+    navigation.push(name, params);
+  };
 
   return {
     product,
@@ -141,5 +206,17 @@ export function useProductDetail(navigation, routeParams = {}) {
     toggleFavorite: () => toggleFavorite({ id: product.id || product._id, productType: summary.productType }),
     handleAddToCart,
     openRelated,
+    isCustomizable,
+    customizeOpen,
+    openCustomize,
+    closeCustomize,
+    customizeDescription,
+    setCustomizeDescription,
+    customizeImage,
+    pickCustomizeImage,
+    clearCustomizeImage,
+    customizing,
+    customizeError,
+    submitCustomize,
   };
 }

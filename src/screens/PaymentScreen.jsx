@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -11,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ErrorText from '../components/ErrorText.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
@@ -27,11 +29,16 @@ export default function PaymentScreen({ navigation }) {
     deliveryMode, setDeliveryMode, isPickup,
     pickupLocations, pickup, selectedPickup, setSelectedPickup,
     savedAddresses, savedVisible, setSavedVisible, useSavedAddress,
+    savedCard, paymentMode, setPaymentMode,
+    cardNumber, setCardNumber, cardHolder, setCardHolder,
+    cardExpiry, setCardExpiry, cardCvv, setCardCvv,
+    cardEmail, setCardEmail, saveCard, setSaveCard,
     couponInput, setCouponInput, appliedCoupon, couponError, applyCoupon,
     subtotal, discount, shippingCost, total,
     freeShippingFrom, qualifiesForFreeShipping, missingForFree,
     paying, error, pay,
   } = usePayment(navigation);
+  const [showCvv, setShowCvv] = useState(false);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -53,7 +60,7 @@ export default function PaymentScreen({ navigation }) {
           </View>
           <Text style={styles.headerNote}>Tu pedido se confirma directo con el taller</Text>
         </View>
-        <Ionicons name="lock-closed-outline" size={17} color={colors.placeholder} />
+        <View style={styles.headerSide} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -254,6 +261,153 @@ export default function PaymentScreen({ navigation }) {
         </View>
 
         <View style={styles.card}>
+          <Text style={styles.cardTitle}>Pago con tarjeta</Text>
+          <Text style={styles.cardNote}>
+            Checkout en modo de prueba con Wompi: no se realiza ningún cobro real a tu tarjeta.
+          </Text>
+
+          {savedCard ? (
+            <View style={styles.modeRow}>
+              <TouchableOpacity
+                style={[styles.modeButton, paymentMode === 'guardada' && styles.modeButtonActive]}
+                onPress={() => setPaymentMode('guardada')}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.modeText, paymentMode === 'guardada' && styles.modeTextActive]}>
+                  Tarjeta guardada
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modeButton, paymentMode === 'nueva' && styles.modeButtonActive]}
+                onPress={() => setPaymentMode('nueva')}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.modeText, paymentMode === 'nueva' && styles.modeTextActive]}>
+                  Otra tarjeta
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          {paymentMode === 'guardada' && savedCard ? (
+            <LinearGradient
+              colors={isDark ? ['#17301F', '#0E1F14'] : [colors.primary, colors.primaryDark]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.cardPreview}
+            >
+              <View style={styles.cardPreviewTop}>
+                <View style={styles.chip} />
+                <Ionicons name="wifi" size={15} color="rgba(255,255,255,0.7)" style={styles.contactless} />
+              </View>
+              <Text style={styles.cardPreviewNumber}>{savedCard.maskedNumber || '•••• •••• •••• ••••'}</Text>
+              <View style={styles.cardPreviewBottom}>
+                <Text style={styles.cardPreviewHolder} numberOfLines={1}>
+                  {(savedCard.cardHolderName || fullName).toUpperCase()}
+                </Text>
+                {savedCard.expMonth && savedCard.expYear ? (
+                  <Text style={styles.cardPreviewExpiry}>
+                    {String(savedCard.expMonth).padStart(2, '0')}/{String(savedCard.expYear).slice(-2)}
+                  </Text>
+                ) : null}
+              </View>
+            </LinearGradient>
+          ) : (
+            <View style={styles.newCardBox}>
+              <Text style={styles.label}>NÚMERO DE TARJETA</Text>
+              <TextInput
+                style={styles.input}
+                value={cardNumber}
+                onChangeText={setCardNumber}
+                placeholder="0000 0000 0000 0000"
+                placeholderTextColor={colors.placeholder}
+                keyboardType="number-pad"
+                maxLength={19}
+              />
+
+              <View style={styles.doubleRow}>
+                <View style={styles.doubleCol}>
+                  <Text style={styles.label}>VENCIMIENTO</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={cardExpiry}
+                    onChangeText={setCardExpiry}
+                    placeholder="MM/AA"
+                    placeholderTextColor={colors.placeholder}
+                    keyboardType="number-pad"
+                    maxLength={5}
+                  />
+                </View>
+                <View style={styles.doubleCol}>
+                  <Text style={styles.label}>CVV</Text>
+                  <View style={styles.cvvRow}>
+                    <TextInput
+                      style={styles.cvvInput}
+                      value={cardCvv}
+                      onChangeText={setCardCvv}
+                      placeholder="•••"
+                      placeholderTextColor={colors.placeholder}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      secureTextEntry={!showCvv}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowCvv((prev) => !prev)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Ionicons
+                        name={showCvv ? 'eye-off-outline' : 'eye-outline'}
+                        size={16}
+                        color={colors.placeholder}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={styles.saveCardRow}
+                onPress={() => setSaveCard((prev) => !prev)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={saveCard ? 'checkbox' : 'square-outline'} size={18} color={colors.primary} />
+                <Text style={styles.saveCardText}>Guardar esta tarjeta en mi cuenta</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <Text style={styles.label}>NOMBRE DEL TITULAR</Text>
+          <TextInput
+            style={styles.input}
+            value={cardHolder}
+            onChangeText={setCardHolder}
+            maxLength={50}
+            placeholder="Nombre como aparece en la tarjeta"
+            placeholderTextColor={colors.placeholder}
+            autoCapitalize="words"
+          />
+
+          <Text style={styles.label}>CORREO PARA EL PAGO</Text>
+          <TextInput
+            style={styles.input}
+            value={cardEmail}
+            onChangeText={setCardEmail}
+            placeholder="nombre@ejemplo.com"
+            placeholderTextColor={colors.placeholder}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <View style={styles.noteBox}>
+            <Ionicons name="information-circle-outline" size={14} color={colors.primary} />
+            <Text style={styles.noteText}>
+              Este checkout corre en modo de prueba con Wompi: ningún cobro real se realiza a tu
+              tarjeta.
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.cardTitle}>Resumen del pedido</Text>
 
           {items.map((item) => (
@@ -329,10 +483,7 @@ export default function PaymentScreen({ navigation }) {
           {paying ? (
             <ActivityIndicator color={colors.white} />
           ) : (
-            <>
-              <Ionicons name="lock-closed" size={15} color={colors.white} />
-              <Text style={styles.payText}>Confirmar pedido — ${total.toFixed(2)}</Text>
-            </>
+            <Text style={styles.payText}>Confirmar pedido — ${total.toFixed(2)}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -382,6 +533,7 @@ const createStyles = (colors, isDark) =>
       paddingHorizontal: 20,
       paddingVertical: 10,
     },
+    headerSide: { width: 22 },
     headerTitles: { alignItems: 'center' },
     headerBrandRow: { flexDirection: 'row', alignItems: 'center' },
     headerLogo: { width: 18, height: 18, marginRight: 7 },
@@ -441,6 +593,57 @@ const createStyles = (colors, isDark) =>
     },
     radioActive: { borderColor: colors.primary },
     radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
+
+    cardPreview: { borderRadius: 18, padding: 18, marginTop: 14 },
+    cardPreviewTop: { flexDirection: 'row', alignItems: 'center' },
+    chip: { width: 30, height: 22, borderRadius: 5, backgroundColor: '#D9BE7E' },
+    contactless: { marginLeft: 9, transform: [{ rotate: '90deg' }] },
+    cardPreviewNumber: {
+      fontSize: 17,
+      letterSpacing: 1.8,
+      fontWeight: '700',
+      color: colors.white,
+      marginTop: 18,
+    },
+    cardPreviewBottom: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 12,
+    },
+    cardPreviewHolder: { flex: 1, fontSize: 12, fontWeight: '700', color: colors.white, marginRight: 10 },
+    cardPreviewExpiry: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
+
+    newCardBox: {
+      marginTop: 8,
+      padding: 14,
+      borderRadius: 14,
+      backgroundColor: isDark ? colors.card : '#F7F9F8',
+    },
+    cvvRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: isDark ? colors.border : '#E5EAE6',
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      height: 48,
+      backgroundColor: isDark ? colors.surface : '#F7F9F8',
+    },
+    cvvInput: { flex: 1, fontSize: 14, color: colors.text },
+
+    saveCardRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
+    saveCardText: { flex: 1, fontSize: 12.5, fontWeight: '600', color: colors.text, marginLeft: 9 },
+
+    noteBox: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      backgroundColor: isDark ? colors.surface : '#F1F3F1',
+      borderRadius: 12,
+      padding: 12,
+      marginTop: 14,
+    },
+    noteText: { flex: 1, fontSize: 10.5, lineHeight: 15, color: colors.placeholder, marginLeft: 8 },
 
     savedButton: {
       flexDirection: 'row',

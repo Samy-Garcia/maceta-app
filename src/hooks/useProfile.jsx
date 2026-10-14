@@ -3,40 +3,36 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { useActiveOrders } from './useActiveOrders.jsx';
-import { getCards } from '../services/cardsStorage.js';
 import { fetchMyLoyalty } from '../services/loyalty.js';
 import { useToast } from '../context/ToastContext.jsx';
 
-// Perfil: resume lo que el cliente ya tiene guardado (tarjetas del
-// dispositivo, direcciones reales de la cuenta, pedidos en curso y hojas de
+// Perfil: resume lo que el cliente ya tiene guardado (su tarjeta tokenizada
+// con Wompi, direcciones reales de la cuenta, pedidos en curso y hojas de
 // lealtad) y lleva a la pantalla que administra cada cosa.
 export function useProfile(navigation) {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const toast = useToast();
   const { isDark, toggleTheme } = useTheme();
   const activeOrders = useActiveOrders();
 
-  const [cards, setCards] = useState([]);
   const [loyaltyPoints, setLoyaltyPoints] = useState(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
   // Al volver de agregar una tarjeta o una dirección, el resumen se actualiza
   useFocusEffect(
     useCallback(() => {
-      getCards(user?.email)
-        .then(setCards)
-        .catch(() => setCards([]));
+      refreshUser();
       fetchMyLoyalty()
         .then((data) => setLoyaltyPoints(data?.points ?? null))
         .catch(() => setLoyaltyPoints(null));
-    }, [user?.email])
+    }, [refreshUser])
   );
 
   const fullName = [user?.name, user?.lastName].filter(Boolean).join(' ') || 'Usuario';
   const addresses = user?.addresses || [];
   // La predeterminada es la que manda el backend; si ninguna lo está, la primera
   const defaultAddress = addresses.find((address) => address.isDefault) || addresses[0] || null;
-  const defaultCard = cards.find((card) => card.isDefault) || cards[0] || null;
+  const defaultCard = user?.savedCard || null;
 
   const go = (route, params) => () => navigation.navigate(route, params);
 
@@ -64,7 +60,6 @@ export function useProfile(navigation) {
     fullName,
     isDark,
     toggleTheme,
-    cards,
     defaultCard,
     addresses,
     defaultAddress,
@@ -74,12 +69,13 @@ export function useProfile(navigation) {
     goToEditProfile: go('EditProfile'),
     goToCards: go('ManageCards'),
     goToAddCard: go('EditCard'),
-    goToEditCard: (card) => navigation.navigate('EditCard', { cardId: card.id }),
     goToAddresses: go('AddressList'),
     goToAddAddress: go('EditLocation'),
     goToEditAddress: (address) => navigation.navigate('EditLocation', { address }),
     goToOrders: go('Orders'),
     goToWishlist: go('Wishlist'),
+    goToQuotations: go('MyQuotations'),
+    goToCustomOrders: go('MyCustomOrders'),
     goToLoyalty: go('LoyaltyPoints'),
     goToNotifications: go('NotificationPreferences'),
     goToSecurity: go('ForgotPassword'),

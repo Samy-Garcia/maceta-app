@@ -108,7 +108,19 @@ export function useProducts(initial = {}) {
     (tab) => {
       if (tab === 'todos') return allProducts;
       if (tab === 'ofertas') return offerProducts;
-      if (tab === 'bestsellers') return bestsellers.map((item) => applyOffer(item, offersMap));
+      if (tab === 'bestsellers') {
+        // El endpoint de más vendidos no resuelve el precio de todos los
+        // tipos; lo que venga incompleto se completa con el catálogo real.
+        const index = new Map(allProducts.map((item) => [item.productType + '-' + item.id, item]));
+        return bestsellers
+          .map((item) => applyOffer(item, offersMap))
+          .map((item) => {
+            if (typeof item.price === 'number') return item;
+            const known = index.get(item.productType + '-' + item.id);
+            return known ? { ...known, sold: item.sold } : null;
+          })
+          .filter(Boolean);
+      }
       return (catalogs[tab] || []).map((item) => applyOffer(item, offersMap));
     },
     [allProducts, offerProducts, bestsellers, catalogs, offersMap]

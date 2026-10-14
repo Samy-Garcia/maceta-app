@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../theme/ThemeContext.jsx';
+import { lightColors } from '../theme/palettes.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { SERIF } from '../theme/typography.js';
 import { backdropFor } from '../theme/gradients.js';
@@ -10,8 +10,11 @@ import { useBackdropStatusBar } from '../hooks/useBackdropStatusBar.jsx';
 
 // Pantalla de bienvenida: presenta la marca y da entrada a Login / Registro.
 // Si ya hay una sesión activa (cookie vigente) entra directo a Home.
+// Fija colores claros: el flujo de autenticación no sigue el modo oscuro que
+// elija el usuario en el resto de la app.
 export default function SplashScreen({ navigation }) {
-  const { colors, isDark } = useTheme();
+  const colors = lightColors;
+  const isDark = false;
   const { authLoading, isAuthenticated } = useAuth();
   const styles = createStyles(colors, isDark);
 
@@ -23,7 +26,7 @@ export default function SplashScreen({ navigation }) {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={backdropFor(isDark)} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={backdropFor(false)} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.topRow}>
@@ -72,8 +75,6 @@ export default function SplashScreen({ navigation }) {
           >
             <Text style={styles.secondaryLabel}>Crear Cuenta</Text>
           </TouchableOpacity>
-
-          <Text style={styles.footer}>SAN SALVADOR • DISEÑO EXCLUSIVO</Text>
         </View>
       </SafeAreaView>
     </View>
@@ -183,15 +184,6 @@ const createStyles = (colors, isDark) => {
       color: isDark ? colors.text : '#1F2D25',
       fontSize: 17,
       fontWeight: '600',
-    },
-    footer: {
-      marginTop: 22,
-      textAlign: 'center',
-      fontSize: 11,
-      letterSpacing: 2.2,
-      fontWeight: '600',
-      color: softGreen,
-      opacity: 0.8,
     },
   });
 };

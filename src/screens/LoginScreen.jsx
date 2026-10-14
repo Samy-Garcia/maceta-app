@@ -6,11 +6,13 @@ import Button from '../components/Button.jsx';
 import GoogleButton from '../components/GoogleButton.jsx';
 import Divider from '../components/Divider.jsx';
 import ErrorText from '../components/ErrorText.jsx';
-import { useTheme } from '../theme/ThemeContext.jsx';
+import { lightColors } from '../theme/palettes.js';
 import { useLogin } from '../hooks/useLogin.jsx';
 
+// Fija colores claros: el login no sigue el modo oscuro que elija el usuario
+// en el resto de la app, siempre se ve igual al boceto original.
 export default function LoginScreen({ navigation, route }) {
-  const { colors } = useTheme();
+  const colors = lightColors;
   const styles = createStyles(colors);
   const {
     email, setEmail, password, setPassword, loading, error,

@@ -17,8 +17,17 @@ export default function HomeProductCard({
 }) {
   const { colors, isDark } = useTheme();
   const styles = createStyles(colors, isDark);
-  const price = product.discountedPrice ?? product.price;
   const isCarousel = variant === 'carousel';
+
+  // Los números se normalizan aquí porque a esta tarjeta le llegan productos
+  // de varias fuentes (catálogo, ofertas, más vendidos) y alguna puede traer
+  // el precio o la calificación vacíos. Antes eso reventaba la pantalla
+  // entera con "Cannot read property 'toFixed' of undefined".
+  const basePrice = Number(product.price) || 0;
+  const discounted = Number(product.discountedPrice);
+  const hasDiscount = Number.isFinite(discounted) && discounted > 0 && discounted < basePrice;
+  const price = hasDiscount ? discounted : basePrice;
+  const rating = Number(product.rating) || 0;
 
   return (
     <TouchableOpacity
@@ -43,7 +52,7 @@ export default function HomeProductCard({
           <View style={styles.ratingPill}>
             <Ionicons name="star" size={9} color="#E8A33D" />
             <Text style={styles.ratingPillText}>
-              {product.rating.toFixed(1)} ({product.reviewCount})
+              {rating.toFixed(1)} ({product.reviewCount})
             </Text>
           </View>
         ) : null}
@@ -69,8 +78,8 @@ export default function HomeProductCard({
         <View style={styles.footer}>
           <View style={styles.priceBox}>
             <Text style={styles.price}>${price.toFixed(2)}</Text>
-            {product.discountedPrice != null ? (
-              <Text style={styles.priceOld}>${product.price.toFixed(2)}</Text>
+            {hasDiscount ? (
+              <Text style={styles.priceOld}>${basePrice.toFixed(2)}</Text>
             ) : null}
           </View>
           <TouchableOpacity

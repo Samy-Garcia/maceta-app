@@ -74,7 +74,7 @@ export default function FiltersModal({
           </TouchableOpacity>
           <View style={styles.headerTitles}>
             <Text style={styles.title}>Filtros</Text>
-            <Text style={styles.subtitle}>MACETAS503 ATELIER</Text>
+            <Text style={styles.subtitle}>MACETAS503</Text>
           </View>
           <View style={styles.headerSpacer} />
         </View>

@@ -1,54 +1,35 @@
-import { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getCards, saveCards, withSingleDefault } from '../services/cardsStorage.js';
+import { deleteWompiCard } from '../services/wompi.js';
 import { useToast } from '../context/ToastContext.jsx';
 
-// lista de tarjetas guardadas (persistidas en el dispositivo con AsyncStorage)
+// La tarjeta de la cuenta (tokenizada con Wompi, igual que en la web): el
+// backend solo guarda una por cliente, ligada a su cuenta, no al teléfono.
 export function useManageCards(navigation) {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const toast = useToast();
-  const [cards, setCards] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const stored = await getCards(user?.email);
-    setCards(stored);
-    setLoading(false);
-  }, [user?.email]);
-
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
+  const card = user?.savedCard || null;
 
   const goToAddCard = () => navigation.navigate('EditCard');
-  const goToEditCard = (card) => navigation.navigate('EditCard', { cardId: card.id });
 
-  const handleDelete = async (card) => {
+  const handleDelete = async () => {
     const ok = await toast.confirm({
       title: 'Eliminar tarjeta',
-      message: '¿Eliminar la tarjeta terminada en ' + card.last4 + '?',
+      message: '¿Eliminar tu tarjeta guardada terminada en ' + (card?.maskedNumber?.slice(-4) || '') + '?',
       confirmLabel: 'Eliminar',
       icon: 'trash-outline',
       destructive: true,
     });
     if (!ok) return;
 
-    const next = withSingleDefault(cards.filter((c) => c.id !== card.id));
-    setCards(next);
-    await saveCards(user?.email, next);
-    toast.success('Tarjeta eliminada');
+    try {
+      await deleteWompiCard();
+      await refreshUser();
+      toast.success('Tarjeta eliminada');
+    } catch (err) {
+      toast.error('No se pudo eliminar', err.message || 'Intenta de nuevo.');
+    }
   };
 
-  // Cambiar cuál es la tarjeta principal (la que Perfil y el carrito muestran)
-  const setDefaultCard = async (card) => {
-    const next = withSingleDefault(cards, card.id);
-    setCards(next);
-    await saveCards(user?.email, next);
-  };
-
-  return { cards, loading, goToAddCard, goToEditCard, handleDelete, setDefaultCard };
+  return { card, loading: false, goToAddCard, handleDelete };
 }

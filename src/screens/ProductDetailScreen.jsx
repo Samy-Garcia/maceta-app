@@ -2,15 +2,19 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ErrorText from '../components/ErrorText.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { SERIF } from '../theme/typography.js';
 import { useProductDetail } from '../hooks/useProductDetail.jsx';
@@ -32,6 +36,10 @@ export default function ProductDetailScreen({ navigation, route }) {
     basePrice, unitPrice, total,
     loading, error, quantity, increment, decrement,
     adding, isFavorite, toggleFavorite, handleAddToCart, openRelated,
+    isCustomizable, customizeOpen, openCustomize, closeCustomize,
+    customizeDescription, setCustomizeDescription,
+    customizeImage, pickCustomizeImage, clearCustomizeImage,
+    customizing, customizeError, submitCustomize,
   } = useProductDetail(navigation, route?.params);
 
   const galleryWidth = width - 32;
@@ -117,7 +125,7 @@ export default function ProductDetailScreen({ navigation, route }) {
                 <View style={styles.ratingRow}>
                   <Ionicons name="star" size={12} color="#E8A33D" />
                   <Text style={styles.ratingText}>
-                    {rating.average.toFixed(1)} ({rating.count})
+                    {(Number(rating.average) || 0).toFixed(1)} ({rating.count})
                   </Text>
                 </View>
               ) : null}
@@ -194,6 +202,22 @@ export default function ProductDetailScreen({ navigation, route }) {
                     </Text>
                   </View>
                 ))}
+              </View>
+            ) : null}
+
+            {isCustomizable ? (
+              <View style={styles.customizeBox}>
+                <Ionicons name="brush-outline" size={20} color={colors.primary} />
+                <View style={styles.customizeTexts}>
+                  <Text style={styles.customizeTitle}>¿Quieres personalizarla?</Text>
+                  <Text style={styles.customizeNote}>
+                    Esta maceta se puede personalizar (ej. un texto o un detalle en la base). Cuéntanos
+                    qué quieres y nos pondremos en contacto contigo.
+                  </Text>
+                  <TouchableOpacity onPress={openCustomize} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Text style={styles.customizeLink}>Pedir personalización</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : null}
 
@@ -336,6 +360,63 @@ export default function ProductDetailScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
       ) : null}
+
+      <Modal visible={customizeOpen} transparent animationType="fade" onRequestClose={closeCustomize}>
+        <Pressable style={styles.modalBackdrop} onPress={closeCustomize}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            <View style={styles.modalHead}>
+              <Text style={styles.modalTitle}>Pedir personalización</Text>
+              <TouchableOpacity onPress={closeCustomize} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close" size={20} color={colors.placeholder} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalLabel}>¿Qué quieres que le pongamos?</Text>
+            <TextInput
+              style={styles.modalTextarea}
+              value={customizeDescription}
+              onChangeText={setCustomizeDescription}
+              placeholder="Ej: que diga 'Familia García' en la base, en letra cursiva"
+              placeholderTextColor={colors.placeholder}
+              maxLength={500}
+              multiline
+              numberOfLines={4}
+            />
+
+            <Text style={styles.modalLabel}>
+              Imagen de referencia <Text style={styles.modalOptional}>(opcional)</Text>
+            </Text>
+            {customizeImage ? (
+              <View style={styles.modalImageRow}>
+                <Image source={{ uri: customizeImage.uri }} style={styles.modalImagePreview} />
+                <TouchableOpacity onPress={clearCustomizeImage} style={styles.modalImageRemove}>
+                  <Ionicons name="close-circle" size={20} color={colors.maroon} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.modalImageButton} onPress={pickCustomizeImage} activeOpacity={0.8}>
+                <Ionicons name="image-outline" size={16} color={colors.text} />
+                <Text style={styles.modalImageButtonText}>Elegir foto</Text>
+              </TouchableOpacity>
+            )}
+
+            <ErrorText message={customizeError} />
+
+            <TouchableOpacity
+              style={[styles.modalSubmit, customizing && styles.modalSubmitDisabled]}
+              onPress={submitCustomize}
+              disabled={customizing}
+              activeOpacity={0.85}
+            >
+              {customizing ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.modalSubmitText}>Enviar solicitud</Text>
+              )}
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -478,6 +559,73 @@ const createStyles = (colors, isDark) =>
     comboTitle: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 8 },
     comboRow: { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
     comboText: { fontSize: 12.5, color: colors.text, marginLeft: 8 },
+
+    customizeBox: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginTop: 22,
+      padding: 16,
+      borderRadius: 16,
+      backgroundColor: colors.primarySoft,
+    },
+    customizeTexts: { flex: 1, marginLeft: 10 },
+    customizeTitle: { fontSize: 13.5, fontWeight: '700', color: colors.primary },
+    customizeNote: { fontSize: 12, lineHeight: 17, color: colors.text, marginTop: 4 },
+    customizeLink: { fontSize: 12.5, fontWeight: '700', color: colors.primary, marginTop: 8 },
+
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    modalCard: {
+      width: '100%',
+      maxWidth: 420,
+      borderRadius: 20,
+      padding: 20,
+      backgroundColor: isDark ? colors.card : colors.surface,
+    },
+    modalHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    modalTitle: { fontFamily: SERIF, fontSize: 18, fontWeight: '700', color: colors.primary },
+    modalLabel: { fontSize: 13, fontWeight: '700', color: colors.text, marginTop: 16, marginBottom: 7 },
+    modalOptional: { fontWeight: '400', color: colors.placeholder },
+    modalTextarea: {
+      minHeight: 90,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 13.5,
+      color: colors.text,
+      textAlignVertical: 'top',
+      borderWidth: 1,
+      borderColor: isDark ? colors.border : '#E5EAE6',
+      backgroundColor: isDark ? colors.surface : '#F7F9F8',
+    },
+    modalImageButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: 44,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: isDark ? colors.border : '#E4E8E4',
+    },
+    modalImageButtonText: { fontSize: 12.5, fontWeight: '700', color: colors.text, marginLeft: 8 },
+    modalImageRow: { flexDirection: 'row', alignItems: 'center' },
+    modalImagePreview: { width: 64, height: 64, borderRadius: 12, backgroundColor: colors.card },
+    modalImageRemove: { marginLeft: 10 },
+    modalSubmit: {
+      height: 52,
+      borderRadius: 26,
+      marginTop: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.primary,
+    },
+    modalSubmitDisabled: { opacity: 0.6 },
+    modalSubmitText: { fontSize: 14.5, fontWeight: '700', color: colors.white },
 
     accordion: {
       marginTop: 12,

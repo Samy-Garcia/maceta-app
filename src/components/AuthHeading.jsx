@@ -1,10 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../theme/ThemeContext.jsx';
+import { lightColors } from '../theme/palettes.js';
 import { SERIF } from '../theme/typography.js';
 
-// Título serif + subtítulo que encabeza cada tarjeta de autenticación
+// Título serif + subtítulo que encabeza cada tarjeta de autenticación.
+// Fija colores claros: el flujo de autenticación no sigue el modo oscuro.
 export default function AuthHeading({ title, subtitle }) {
-  const { colors } = useTheme();
+  const colors = lightColors;
   const styles = createStyles(colors);
 
   return (

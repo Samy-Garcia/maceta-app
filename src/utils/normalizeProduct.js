@@ -13,6 +13,12 @@ export function normalizeProduct(item, productType) {
     dimensions: item.dimensions || item.size || '',
     // Las plantas guardan su texto en 'care' en vez de 'description'
     description: item.description || item.care || '',
+    // Las plantas separan sus cuidados en 4 categorías reales del backend
+    // (antes era un solo bloque de texto); se guardan aparte para la guía.
+    careLight: item.careLight || '',
+    careWater: item.careWater || '',
+    careSoil: item.careSoil || '',
+    careTemperature: item.careTemperature || '',
     productType,
     createdAt: item.createdAt,
     sold: item.sold,

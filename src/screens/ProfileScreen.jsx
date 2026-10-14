@@ -14,18 +14,17 @@ import Avatar from '../components/Avatar.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { SERIF } from '../theme/typography.js';
 import { useProfile } from '../hooks/useProfile.jsx';
-import appConfig from '../../app.json';
 
 export default function ProfileScreen({ navigation }) {
   const { colors, isDark } = useTheme();
   const styles = createStyles(colors, isDark);
   const {
     user, fullName, toggleTheme,
-    defaultCard, cards, defaultAddress, addresses,
+    defaultCard, defaultAddress, addresses,
     activeOrders, loyaltyPoints, loggingOut,
-    goToEditProfile, goToCards, goToAddCard, goToEditCard,
+    goToEditProfile, goToCards, goToAddCard,
     goToAddresses, goToAddAddress, goToEditAddress,
-    goToOrders, goToWishlist, goToLoyalty, goToNotifications, goToSecurity, handleLogout,
+    goToOrders, goToWishlist, goToQuotations, goToCustomOrders, goToLoyalty, goToNotifications, goToSecurity, handleLogout,
   } = useProfile(navigation);
 
   const links = [
@@ -44,6 +43,20 @@ export default function ProfileScreen({ navigation }) {
       label: 'Mi lista de deseos',
       note: 'Productos guardados',
       onPress: goToWishlist,
+    },
+    {
+      key: 'quotations',
+      icon: 'document-text-outline',
+      label: 'Cotizaciones',
+      note: 'Solicitudes para tus eventos',
+      onPress: goToQuotations,
+    },
+    {
+      key: 'customOrders',
+      icon: 'brush-outline',
+      label: 'Personalizaciones',
+      note: 'Macetas pedidas a tu gusto',
+      onPress: goToCustomOrders,
     },
     {
       key: 'loyalty',
@@ -88,38 +101,39 @@ export default function ProfileScreen({ navigation }) {
 
         <View style={styles.sectionHead}>
           <Ionicons name="card-outline" size={16} color={colors.text} />
-          <Text style={styles.sectionTitle}>Métodos de pago</Text>
-          <TouchableOpacity onPress={goToAddCard} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={styles.sectionAction}>+ AGREGAR</Text>
-          </TouchableOpacity>
+          <Text style={styles.sectionTitle}>Método de pago</Text>
+          {!defaultCard ? (
+            <TouchableOpacity onPress={goToAddCard} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={styles.sectionAction}>+ AGREGAR</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {defaultCard ? (
-          <TouchableOpacity
-            style={styles.creditCard}
-            activeOpacity={0.9}
-            onPress={() => goToEditCard(defaultCard)}
-          >
+          <TouchableOpacity style={styles.creditCard} activeOpacity={0.9} onPress={goToCards}>
             <View style={styles.creditTop}>
               <View style={styles.chip} />
               <Ionicons name="wifi" size={16} color="rgba(255,255,255,0.7)" style={styles.contactless} />
               <Text style={styles.creditBrand}>MACETAS 503</Text>
             </View>
 
-            <Text style={styles.creditNumber}>••••  ••••  ••••  {defaultCard.last4}</Text>
+            <Text style={styles.creditNumber}>{defaultCard.maskedNumber || '•••• •••• •••• ••••'}</Text>
 
             <View style={styles.creditBottom}>
               <View>
                 <Text style={styles.creditLabel}>TITULAR</Text>
                 <Text style={styles.creditValue} numberOfLines={1}>
-                  {defaultCard.holder?.toUpperCase()}
+                  {(defaultCard.cardHolderName || fullName)?.toUpperCase()}
                 </Text>
               </View>
-              <View>
-                <Text style={styles.creditLabel}>VENCE</Text>
-                <Text style={styles.creditValue}>{defaultCard.expiry}</Text>
-              </View>
-              <Text style={styles.creditType}>{defaultCard.label}</Text>
+              {defaultCard.expMonth && defaultCard.expYear ? (
+                <View>
+                  <Text style={styles.creditLabel}>VENCE</Text>
+                  <Text style={styles.creditValue}>
+                    {String(defaultCard.expMonth).padStart(2, '0')}/{String(defaultCard.expYear).slice(-2)}
+                  </Text>
+                </View>
+              ) : null}
             </View>
           </TouchableOpacity>
         ) : (
@@ -128,15 +142,6 @@ export default function ProfileScreen({ navigation }) {
             <Text style={styles.emptyText}>Agrega una tarjeta para pagar más rápido</Text>
           </TouchableOpacity>
         )}
-
-        {cards.length > 1 ? (
-          <TouchableOpacity style={styles.moreLink} onPress={goToCards}>
-            <Text style={styles.moreLinkText}>
-              Ver las {cards.length} tarjetas guardadas
-            </Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.placeholder} />
-          </TouchableOpacity>
-        ) : null}
 
         <View style={styles.sectionHead}>
           <Ionicons name="location-outline" size={16} color={colors.text} />
@@ -289,10 +294,6 @@ export default function ProfileScreen({ navigation }) {
             </>
           )}
         </TouchableOpacity>
-
-        <Text style={styles.version}>
-          Macetas 503 · Atelier Botánico v{appConfig.expo.version}
-        </Text>
       </ScrollView>
 
       <BottomTabBar active="Perfil" />

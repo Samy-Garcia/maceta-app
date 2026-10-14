@@ -50,7 +50,7 @@ export default function EditProfileScreen({ navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.overline}>MI CUENTA · ATELIER</Text>
+        <Text style={styles.overline}>MI CUENTA</Text>
         <Text style={styles.title}>Editar perfil</Text>
 
         <View style={styles.avatarSection}>
@@ -296,9 +296,6 @@ export default function EditProfileScreen({ navigation }) {
         </TouchableOpacity>
 
         <Text style={styles.footerBrand}>MACETAS503 · ALFARERÍA Y BOTÁNICA SALVADOREÑA</Text>
-        <Text style={styles.footerNote}>
-          Tus datos viajan cifrados por HTTPS entre la app y el taller.
-        </Text>
       </ScrollView>
 
       <BottomTabBar active="Perfil" />

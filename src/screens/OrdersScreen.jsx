@@ -36,7 +36,7 @@ export default function OrdersScreen({ navigation }) {
 
     return (
       <View style={styles.card}>
-        <Text style={styles.cardOverline}>ATELIER MACETAS503</Text>
+        <Text style={styles.cardOverline}>MACETAS503</Text>
 
         <View style={styles.cardTop}>
           <Text style={styles.orderCode}>Pedido {order.orderCode}</Text>

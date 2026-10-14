@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Image,
   Linking,
   ScrollView,
@@ -20,7 +21,7 @@ import { useTheme } from '../theme/ThemeContext.jsx';
 import { SERIF } from '../theme/typography.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useHome } from '../hooks/useHome.jsx';
-import { TYPE_LABEL } from '../utils/productTypes.js';
+import { TYPE_LABEL, productRoute } from '../utils/productTypes.js';
 import { favoriteKey } from '../hooks/useProductActions.jsx';
 import { isRecentlyAdded } from '../utils/normalizeProduct.js';
 
@@ -56,7 +57,7 @@ export default function HomeScreen({ navigation }) {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
   const {
-    announcement, freeShippingFrom, socialMedia, heroImages,
+    socialMedia, heroImages,
     categories, category, setCategory,
     promos, bestsellers, newArrivals, community, rating,
     loyaltyPoints,
@@ -67,8 +68,46 @@ export default function HomeScreen({ navigation }) {
   const heroWidth = width - 40;
   const openSearch = () =>
     navigation.navigate('Products', search.trim() ? { query: search.trim() } : undefined);
-  const openProduct = (product) => navigation.navigate('ProductDetail', { product });
+  const openProduct = (product) => {
+    const { name, params } = productRoute(product);
+    navigation.navigate(name, params);
+  };
+
+  // Traduce el link del banner que configura el admin (una ruta de la web,
+  // como "/macetas") a la pantalla equivalente de la app. Cualquier otra ruta
+  // que no se reconozca manda al catálogo completo en vez de no hacer nada.
+  const bannerRoute = (link) => {
+    const path = (link || '').toLowerCase();
+    if (path.includes('maceta')) return ['Collection', { tab: 'maceta' }];
+    if (path.includes('vela')) return ['Collection', { tab: 'vela' }];
+    if (path.includes('planta')) return ['PlantLibrary'];
+    if (path.includes('masvendidos') || path.includes('bestseller')) {
+      return ['Products', { tab: 'bestsellers' }];
+    }
+    return ['Products'];
+  };
   const isFavorite = (item) => favoriteIds.has(favoriteKey(item.productType, item.id));
+
+  // Banners: igual que la web, se muestra UNO solo a la vez (nunca "2
+  // activos" al mismo tiempo) y rota solo cada 5 segundos si hay más de uno.
+  const [heroIndex, setHeroIndex] = useState(0);
+  const heroFade = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    setHeroIndex(0);
+  }, [heroImages.length]);
+  useEffect(() => {
+    if (heroImages.length <= 1) return undefined;
+    const timer = setInterval(() => {
+      Animated.sequence([
+        Animated.timing(heroFade, { toValue: 0, duration: 250, useNativeDriver: true }),
+      ]).start(() => {
+        setHeroIndex((prev) => (prev + 1) % heroImages.length);
+        Animated.timing(heroFade, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+      });
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [heroImages.length, heroFade]);
+  const activeHero = heroImages[heroIndex] || null;
 
   // Cada catálogo tiene sus propios datos: las macetas traen dimensiones, los
   // más vendidos traen unidades vendidas y el resto al menos su stock real.
@@ -101,47 +140,11 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {announcement ? (
-          <View style={styles.announcement}>
-            <Ionicons name="megaphone-outline" size={13} color={colors.primary} />
-            <Text style={styles.announcementText} numberOfLines={1}>{announcement}</Text>
-          </View>
-        ) : null}
-
-        {freeShippingFrom != null ? (
-          <View style={styles.shippingStrip}>
-            <View style={styles.shippingDot} />
-            <Text style={styles.shippingText}>
-              Envío gratis en compras mayores a ${freeShippingFrom.toFixed(2)}
-            </Text>
-            <Ionicons name="car-outline" size={15} color={colors.placeholder} />
-          </View>
-        ) : null}
 
         <Text style={styles.greeting}>Hola, {user?.name || 'bienvenido'}</Text>
         <Text style={styles.greetingSub}>
           Descubre piezas botánicas en arcilla cruda y concreto mineral.
         </Text>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsRow}
-        >
-          {categories.map((item) => {
-            const active = item.key === category;
-            return (
-              <TouchableOpacity
-                key={item.key}
-                style={[styles.chip, active && styles.chipActive]}
-                onPress={() => setCategory(item.key)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
 
         {loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : null}
 
@@ -185,8 +188,12 @@ export default function HomeScreen({ navigation }) {
                     </Text>
                     <Text style={styles.heroName} numberOfLines={1}>{promo.name}</Text>
                     <View style={styles.heroPrices}>
-                      <Text style={styles.heroPrice}>${promo.discountedPrice.toFixed(2)}</Text>
-                      <Text style={styles.heroPriceOld}>${promo.price.toFixed(2)}</Text>
+                      <Text style={styles.heroPrice}>
+                        ${(Number(promo.discountedPrice) || 0).toFixed(2)}
+                      </Text>
+                      <Text style={styles.heroPriceOld}>
+                        ${(Number(promo.price) || 0).toFixed(2)}
+                      </Text>
                       <View style={styles.heroDiscount}>
                         <Text style={styles.heroDiscountText}>-{promo.discountPercentage}%</Text>
                       </View>
@@ -200,19 +207,53 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
             ))}
           </ScrollView>
-        ) : heroImages.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            snapToInterval={heroWidth + 12}
-            decelerationRate="fast"
-          >
-            {heroImages.map((hero) => (
-              <View key={hero._id} style={[styles.hero, { width: heroWidth }]}>
-                <Image source={{ uri: hero.url }} style={styles.heroImage} resizeMode="cover" />
+        ) : activeHero ? (
+          <Animated.View style={{ opacity: heroFade }}>
+            <TouchableOpacity
+              style={[styles.hero, { width: heroWidth, marginRight: 0 }]}
+              activeOpacity={activeHero.buttonLink ? 0.92 : 1}
+              disabled={!activeHero.buttonLink}
+              onPress={() => navigation.navigate(...bannerRoute(activeHero.buttonLink))}
+            >
+              <Image source={{ uri: activeHero.url }} style={styles.heroImage} resizeMode="cover" />
+              {activeHero.title || activeHero.subtitle || activeHero.buttonText ? (
+                <>
+                  <View style={styles.heroShade} />
+                  <View style={styles.heroBottom}>
+                    <View style={styles.heroInfo}>
+                      {activeHero.subtitle ? (
+                        <Text style={styles.heroOverline} numberOfLines={1}>
+                          {activeHero.subtitle.toUpperCase()}
+                        </Text>
+                      ) : null}
+                      {activeHero.title ? (
+                        <Text style={styles.heroName} numberOfLines={2}>
+                          {activeHero.title}
+                        </Text>
+                      ) : null}
+                    </View>
+                    {activeHero.buttonText ? (
+                      <View style={styles.heroButton}>
+                        <Text style={styles.heroButtonText}>{activeHero.buttonText}</Text>
+                        <Ionicons name="arrow-forward" size={14} color={colors.text} />
+                      </View>
+                    ) : null}
+                  </View>
+                </>
+              ) : null}
+            </TouchableOpacity>
+
+            {heroImages.length > 1 ? (
+              <View style={styles.heroDots}>
+                {heroImages.map((hero, index) => (
+                  <View
+                    key={hero._id}
+                    style={[styles.heroDot, index === heroIndex && styles.heroDotActive]}
+                  />
+                ))}
               </View>
-            ))}
-          </ScrollView>
+            ) : null}
+          </Animated.View>
         ) : null}
 
         {bestsellers.length > 0 ? (
@@ -245,35 +286,55 @@ export default function HomeScreen({ navigation }) {
           </>
         ) : null}
 
-        {newArrivals.length > 0 ? (
-          <>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitles}>
-                <Text style={styles.sectionTitle}>Novedades Recientes</Text>
-                <Text style={styles.sectionSub}>Llegadas exclusivas al catálogo</Text>
-              </View>
-              <TouchableOpacity onPress={() => navigation.navigate('Products')}>
-                <Text style={styles.sectionLink}>Explorar todo</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitles}>
+            <Text style={styles.sectionTitle}>Novedades Recientes</Text>
+            <Text style={styles.sectionSub}>Llegadas exclusivas al catálogo</Text>
+          </View>
+          <TouchableOpacity onPress={() => navigation.navigate('Products')}>
+            <Text style={styles.sectionLink}>Explorar todo</Text>
+          </TouchableOpacity>
+        </View>
 
-            <View style={styles.grid}>
-              {newArrivals.map((item) => (
-                <HomeProductCard
-                  key={item.productType + '-' + item.id}
-                  product={item}
-                  overline={TYPE_LABEL[item.productType]}
-                  badge={isRecentlyAdded(item) ? 'Nuevo' : undefined}
-                  specs={specsOf(item)}
-                  isFavorite={isFavorite(item)}
-                  onPress={() => openProduct(item)}
-                  onToggleFavorite={() => toggleFavorite(item)}
-                  onAdd={() => addToCart(item)}
-                />
-              ))}
-            </View>
-          </>
-        ) : null}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsRow}
+        >
+          {categories.map((item) => {
+            const active = item.key === category;
+            return (
+              <TouchableOpacity
+                key={item.key}
+                style={[styles.chip, active && styles.chipActive]}
+                onPress={() => setCategory(item.key)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {newArrivals.length > 0 ? (
+          <View style={styles.grid}>
+            {newArrivals.map((item) => (
+              <HomeProductCard
+                key={item.productType + '-' + item.id}
+                product={item}
+                overline={TYPE_LABEL[item.productType]}
+                badge={isRecentlyAdded(item) ? 'Nuevo' : undefined}
+                specs={specsOf(item)}
+                isFavorite={isFavorite(item)}
+                onPress={() => openProduct(item)}
+                onToggleFavorite={() => toggleFavorite(item)}
+                onAdd={() => addToCart(item)}
+              />
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.emptyCategoryText}>No hay piezas nuevas en esta categoría todavía.</Text>
+        )}
 
         <View style={styles.adviceCard}>
           <View style={styles.adviceTag}>
@@ -298,18 +359,29 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
             ))}
           </View>
+          <TouchableOpacity
+            style={styles.adviceGuideButton}
+            onPress={() => navigation.navigate('PlantLibrary')}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="book-outline" size={15} color={colors.primary} />
+            <Text style={styles.adviceGuideText}>Ver guía de cuidados de plantas</Text>
+            <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+          </TouchableOpacity>
         </View>
 
         {community.length > 0 ? (
           <>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitles}>
-                <Text style={styles.sectionTitle}>Comunidad del Atelier</Text>
+                <Text style={styles.sectionTitle}>Comunidad Macetas503</Text>
                 <Text style={styles.sectionSub}>Rincones creados por nuestros clientes</Text>
               </View>
               <View style={styles.ratingPill}>
                 <Ionicons name="star" size={11} color="#E8A33D" />
-                <Text style={styles.ratingText}>{rating.average.toFixed(1)}/5</Text>
+                <Text style={styles.ratingText}>
+                  {(Number(rating.average) || 0).toFixed(1)}/5
+                </Text>
               </View>
             </View>
 
@@ -395,7 +467,7 @@ export default function HomeScreen({ navigation }) {
 const createStyles = (colors, isDark) =>
   StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: isDark ? colors.background : '#F6F7F5' },
-
+
     searchRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -428,43 +500,8 @@ const createStyles = (colors, isDark) =>
 
     content: { paddingHorizontal: 20, paddingBottom: 24 },
 
-    announcement: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: colors.primarySoft,
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      marginBottom: 8,
-    },
-    announcementText: {
-      flex: 1,
-      fontSize: 12,
-      fontWeight: '600',
-      color: colors.primary,
-      marginLeft: 8,
-    },
-    shippingStrip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: colors.surface,
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 9,
-      borderWidth: 1,
-      borderColor: isDark ? colors.border : '#E9ECE9',
-    },
-    shippingDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: colors.maroon,
-      marginRight: 8,
-    },
-    shippingText: { flex: 1, fontSize: 12, color: colors.text },
-
     greeting: { fontFamily: SERIF, fontSize: 24, fontWeight: '700', color: colors.text, marginTop: 20 },
-    greetingSub: { fontSize: 13, color: colors.placeholder, marginTop: 5, lineHeight: 18 },
+    greetingSub: { fontSize: 13, color: colors.placeholder, marginTop: 6, marginBottom: 4, lineHeight: 20 },
 
     chipsRow: { paddingVertical: 16, paddingRight: 8 },
     chip: {
@@ -496,6 +533,20 @@ const createStyles = (colors, isDark) =>
     },
     heroImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
     heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(12, 32, 20, 0.35)' },
+    heroDots: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    heroDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.border,
+      marginHorizontal: 3,
+    },
+    heroDotActive: { backgroundColor: colors.primary, width: 16 },
     heroTag: {
       position: 'absolute',
       top: 14,
@@ -565,6 +616,12 @@ const createStyles = (colors, isDark) =>
     sectionLink: { fontSize: 12, fontWeight: '700', color: colors.maroon },
     carousel: { overflow: 'visible' },
     grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+    emptyCategoryText: {
+      fontSize: 12.5,
+      color: colors.placeholder,
+      textAlign: 'center',
+      paddingVertical: 18,
+    },
 
     ratingPill: { flexDirection: 'row', alignItems: 'center' },
     ratingText: { fontSize: 12, fontWeight: '700', color: colors.text, marginLeft: 4 },
@@ -604,6 +661,16 @@ const createStyles = (colors, isDark) =>
     },
     adviceOptionTitle: { fontSize: 12, fontWeight: '700', color: colors.text, marginTop: 7 },
     adviceOptionHint: { fontSize: 10, color: colors.placeholder, marginTop: 2 },
+    adviceGuideButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: 44,
+      borderRadius: 14,
+      marginTop: 14,
+      backgroundColor: colors.primarySoft,
+    },
+    adviceGuideText: { fontSize: 12.5, fontWeight: '700', color: colors.primary, marginHorizontal: 8 },
 
     reviewCard: {
       width: 250,

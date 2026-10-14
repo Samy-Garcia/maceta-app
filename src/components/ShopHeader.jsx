@@ -24,10 +24,7 @@ export default function ShopHeader() {
             resizeMode="contain"
           />
         </View>
-        <View>
-          <Text style={styles.wordmark}>Macetas503</Text>
-          <Text style={styles.tagline}>ATELIER BOTÁNICO</Text>
-        </View>
+        <Text style={styles.wordmark}>Macetas503</Text>
       </View>
 
       <View style={styles.actions}>
@@ -69,7 +66,6 @@ const createStyles = (colors) =>
     },
     brandLogo: { width: 19, height: 19 },
     wordmark: { fontFamily: SERIF, fontSize: 19, fontWeight: '700', color: colors.text },
-    tagline: { fontSize: 8.5, letterSpacing: 1.6, fontWeight: '700', color: colors.maroon, marginTop: 1 },
     actions: { flexDirection: 'row', alignItems: 'center' },
     bell: { marginRight: 14 },
     bellBadge: {

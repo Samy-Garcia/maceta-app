@@ -15,6 +15,11 @@ import WishlistScreen from '../screens/WishlistScreen.jsx';
 import ProductsScreen from '../screens/ProductsScreen.jsx';
 import ProductDetailScreen from '../screens/ProductDetailScreen.jsx';
 import CollectionScreen from '../screens/CollectionScreen.jsx';
+import PlantLibraryScreen from '../screens/PlantLibraryScreen.jsx';
+import PlantDetailScreen from '../screens/PlantDetailScreen.jsx';
+import QuotationsScreen from '../screens/QuotationsScreen.jsx';
+import MyQuotationsScreen from '../screens/MyQuotationsScreen.jsx';
+import MyCustomOrdersScreen from '../screens/MyCustomOrdersScreen.jsx';
 import CartScreen from '../screens/CartScreen.jsx';
 import PaymentScreen from '../screens/PaymentScreen.jsx';
 import OrderConfirmedScreen from '../screens/OrderConfirmedScreen.jsx';
@@ -53,6 +58,11 @@ export default function AppNavigator() {
       <Stack.Screen name="Products" component={ProductsScreen} />
       <Stack.Screen name="Collection" component={CollectionScreen} />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+      <Stack.Screen name="PlantLibrary" component={PlantLibraryScreen} />
+      <Stack.Screen name="PlantDetail" component={PlantDetailScreen} />
+      <Stack.Screen name="Quotations" component={QuotationsScreen} />
+      <Stack.Screen name="MyQuotations" component={MyQuotationsScreen} />
+      <Stack.Screen name="MyCustomOrders" component={MyCustomOrdersScreen} />
 
       <Stack.Screen name="Wishlist" component={WishlistScreen} />
 

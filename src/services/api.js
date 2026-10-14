@@ -1,4 +1,19 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
+// Backend desplegado en Render, el mismo que documenta el .env. Se deja como
+// respaldo porque EXPO_PUBLIC_API_URL solo existe si Metro llegó a leer el
+// .env al arrancar: si se levanta desde otra carpeta, o el teléfono quedó con
+// una build vieja, la variable llega undefined y todas las peticiones salían
+// hacia "undefined/api/...". La variable sigue mandando cuando está presente,
+// así que apuntar a un backend local sigue funcionando igual.
+const FALLBACK_API_URL = 'https://macetas.onrender.com';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || FALLBACK_API_URL;
+
+if (!process.env.EXPO_PUBLIC_API_URL) {
+  console.warn(
+    '[api] EXPO_PUBLIC_API_URL no está definida; usando ' +
+      FALLBACK_API_URL +
+      '. Si querías otro backend, reinicia Metro con "npx expo start -c" desde la carpeta del proyecto.'
+  );
+}
 
 // Error que trae el status HTTP para que las pantallas decidan qué mensaje mostrar
 export class ApiError extends Error {
@@ -8,7 +23,33 @@ export class ApiError extends Error {
   }
 }
 
-const OFFLINE = 'No se pudo conectar con el servidor. Verifica tu conexión.';
+const OFFLINE = 'Sin conexión con el servidor. Revisa tu internet e intenta de nuevo.';
+
+// Fallos de red de verdad. Se listan las formas en que los reporta cada
+// plataforma para no mostrarle al cliente una excepción de Java: en Android
+// un problema de DNS llega como "fetch failed: java.net.UnknownHostException:
+// Unable to resolve host ... No address associated with hostname".
+const NETWORK_ERROR = new RegExp(
+  [
+    'network request failed',
+    'fetch failed',
+    'failed to fetch',
+    'unknownhost',
+    'unable to resolve host',
+    'no address associated',
+    'enotfound',
+    'econnrefused',
+    'econnreset',
+    'connection',
+    'timeout',
+    'timed out',
+    'unreachable',
+    'socket',
+    'offline',
+    'ssl',
+  ].join('|'),
+  'i'
+);
 
 // Wrapper de fetch para hablar con la API de Macetas503 (maneja JSON, FormData y la cookie de sesión).
 //
@@ -36,9 +77,7 @@ export async function apiFetch(path, options = {}) {
     // escondía el error de verdad (por ejemplo, que el cuerpo no se pudo
     // serializar). Solo se llama "sin conexión" a lo que de verdad lo es.
     const detail = err?.message || err?.name || (err ? String(err) : '');
-    const isNetwork = /network request failed|failed to fetch|connection|timeout|unreachable|socket/i.test(
-      detail
-    );
+    const isNetwork = NETWORK_ERROR.test(detail);
     console.warn('[apiFetch] falló ' + (options.method || 'GET') + ' ' + path, err);
     throw new ApiError(
       isNetwork ? OFFLINE : 'Falló la petición: ' + (detail || 'el servidor no devolvió detalle'),

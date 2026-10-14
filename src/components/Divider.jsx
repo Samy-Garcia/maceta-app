@@ -1,10 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../theme/ThemeContext.jsx';
+import { lightColors } from '../theme/palettes.js';
 
 // Separador entre el botón principal y el de Google: dos líneas con un
-// circulito al centro (o una etiqueta, si se le pasa una)
+// circulito al centro (o una etiqueta, si se le pasa una).
+// Fija colores claros: el flujo de autenticación no sigue el modo oscuro.
 export default function Divider({ label }) {
-  const { colors } = useTheme();
+  const colors = lightColors;
   const styles = createStyles(colors);
 
   return (

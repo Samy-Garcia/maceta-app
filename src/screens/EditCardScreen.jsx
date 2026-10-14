@@ -4,7 +4,6 @@ import {
   Image,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -19,16 +18,16 @@ import { SERIF } from '../theme/typography.js';
 import { useEditCard } from '../hooks/useEditCard.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 
-export default function EditCardScreen({ navigation, route }) {
+export default function EditCardScreen({ navigation }) {
   const { colors, isDark } = useTheme();
   const styles = createStyles(colors, isDark);
   const [showCvv, setShowCvv] = useState(false);
   const toast = useToast();
   const {
     cardNumber, handleCardNumberChange, holder, setHolder, expiry, handleExpiryChange, cvv, setCvv,
-    isDefault, setIsDefault, previewLast4, previewBrand,
+    previewLast4, previewBrand,
     saving, error, handleSave, handleDelete, isEditing,
-  } = useEditCard(navigation, route?.params?.cardId);
+  } = useEditCard(navigation);
 
   const explainCvv = () =>
     toast.alert({
@@ -49,29 +48,26 @@ export default function EditCardScreen({ navigation, route }) {
           <Ionicons name="chevron-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Macetas503</Text>
-        <View style={styles.headerRight}>
-          <View style={styles.lockButton}>
-            <Ionicons name="lock-closed" size={15} color={colors.text} />
-          </View>
-          <Image
-            source={require('../../assets/logo.png')}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
-        </View>
+        <Image
+          source={require('../../assets/logo.png')}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.pillsRow}>
           <View style={styles.pill}>
-            <Ionicons name="phone-portrait-outline" size={11} color={colors.primary} />
-            <Text style={styles.pillText}>GUARDADA EN ESTE EQUIPO</Text>
+            <Ionicons name="shield-checkmark-outline" size={11} color={colors.primary} />
+            <Text style={styles.pillText}>TOKENIZADA CON WOMPI</Text>
           </View>
         </View>
 
-        <Text style={styles.title}>{isEditing ? 'Editar tarjeta' : 'Agregar tarjeta'}</Text>
+        <Text style={styles.title}>{isEditing ? 'Reemplazar tarjeta' : 'Agregar tarjeta'}</Text>
         <Text style={styles.subtitle}>
-          Guarda los datos de tu tarjeta para no escribirlos cada vez que hagas un pedido.
+          {isEditing
+            ? 'Guardar una tarjeta nueva reemplaza la que ya tienes: solo puedes tener una a la vez.'
+            : 'Guarda tu tarjeta para pagarla más rápido en tus próximos pedidos.'}
         </Text>
 
         <LinearGradient
@@ -186,27 +182,12 @@ export default function EditCardScreen({ navigation, route }) {
           </View>
         </View>
 
-        <View style={styles.switchRow}>
-          <View style={styles.switchIcon}>
-            <Ionicons name="star" size={15} color={colors.primary} />
-          </View>
-          <View style={styles.switchTexts}>
-            <Text style={styles.switchTitle}>Tarjeta principal</Text>
-            <Text style={styles.switchNote}>Es la que aparece en tu perfil por defecto</Text>
-          </View>
-          <Switch
-            value={isDefault}
-            onValueChange={setIsDefault}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.white}
-          />
-        </View>
-
         <View style={styles.noteBox}>
-          <Ionicons name="lock-closed-outline" size={16} color={colors.primary} />
+          <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
           <Text style={styles.noteText}>
-            Solo se guardan la marca, los últimos 4 dígitos, el titular y el vencimiento, y únicamente
-            en este teléfono. El número completo y el CVV no se almacenan ni salen de aquí.
+            Tu tarjeta se tokeniza con Wompi y queda guardada en tu cuenta, no en este teléfono. El
+            número completo y el CVV no se almacenan: solo la marca, los últimos 4 dígitos, el titular
+            y el vencimiento.
           </Text>
         </View>
 

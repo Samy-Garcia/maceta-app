@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../theme/ThemeContext.jsx';
+import { lightColors } from '../theme/palettes.js';
 
 // Campo de formulario con etiqueta, que ocupe en Login, Registro y recuperación.
 // Si es de contraseña muestra el ojito para ver u ocultar lo escrito.
+// Fija colores claros: el flujo de autenticación no sigue el modo oscuro.
 export default function FormInput({
   label,
   value,
@@ -16,7 +17,8 @@ export default function FormInput({
   maxLength,
   uppercaseLabel = false,
 }) {
-  const { colors, isDark } = useTheme();
+  const colors = lightColors;
+  const isDark = false;
   const styles = createStyles(colors, isDark);
   const [hidden, setHidden] = useState(true);
 

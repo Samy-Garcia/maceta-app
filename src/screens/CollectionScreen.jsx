@@ -19,12 +19,12 @@ import FiltersModal from '../components/FiltersModal.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { SERIF } from '../theme/typography.js';
 import { useProducts } from '../hooks/useProducts.jsx';
-import { TYPE_LABEL } from '../utils/productTypes.js';
+import { TYPE_LABEL, productRoute } from '../utils/productTypes.js';
 import { favoriteKey } from '../hooks/useProductActions.jsx';
 import { isRecentlyAdded } from '../utils/normalizeProduct.js';
 
 // Vista de una colección: la misma categoría con sus filtros propios.
-// Se llega desde las tarjetas de "Colecciones del Atelier".
+// Se llega desde las tarjetas de "Colecciones Macetas503".
 export default function CollectionScreen({ navigation, route }) {
   const { colors, isDark } = useTheme();
   const styles = createStyles(colors, isDark);
@@ -183,7 +183,10 @@ export default function CollectionScreen({ navigation, route }) {
               badge={badgeOf(item)}
               specs={item.description || item.dimensions}
               isFavorite={favoriteIds.has(favoriteKey(item.productType, item.id))}
-              onPress={() => navigation.navigate('ProductDetail', { product: item })}
+              onPress={() => {
+                const { name, params } = productRoute(item);
+                navigation.navigate(name, params);
+              }}
               onToggleFavorite={() => toggleFavorite(item)}
               onAdd={() => addToCart(item)}
             />

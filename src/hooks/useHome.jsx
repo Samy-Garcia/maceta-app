@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   fetchBestsellers,
+  fetchCombos,
   fetchMacetas,
   fetchOffers,
   fetchPlantas,
@@ -19,6 +20,7 @@ export const HOME_CATEGORIES = [
   { key: 'maceta', label: 'Macetas' },
   { key: 'vela', label: 'Velas' },
   { key: 'planta', label: 'Plantas' },
+  { key: 'combo', label: 'Combos' },
 ];
 
 const NEW_ARRIVALS_LIMIT = 6;
@@ -58,8 +60,9 @@ export function useHome() {
       fetchMacetas().catch(() => []),
       fetchVelas().catch(() => []),
       fetchPlantas().catch(() => []),
+      fetchCombos().catch(() => []),
     ])
-      .then(([configData, offers, bestsellersData, macetas, velas, plantas]) => {
+      .then(([configData, offers, bestsellersData, macetas, velas, plantas, combos]) => {
         const offersMap = buildOffersMap(offers || []);
 
         setConfig(configData);
@@ -83,17 +86,29 @@ export function useHome() {
             .sort((a, b) => b.discountPercentage - a.discountPercentage)
         );
 
-        const topSellers = (bestsellersData || []).map((item) =>
-          applyOffer(normalizeProduct(item, item.productType), offersMap)
-        );
-        setBestsellers(topSellers);
-
         const allProducts = [
           ...(macetas || []).map((item) => normalizeProduct(item, 'maceta')),
           ...(velas || []).map((item) => normalizeProduct(item, 'vela')),
           ...(plantas || []).map((item) => normalizeProduct(item, 'planta')),
+          ...(combos || []).map((item) => normalizeProduct(item, 'combo')),
         ].map((item) => applyOffer(item, offersMap));
         setCatalog(allProducts);
+
+        // /api/orders/bestsellers no resuelve el precio de todos los tipos
+        // (los "otro", por ejemplo, vienen sin price). Se completa con lo que
+        // ya trajimos del catálogo antes de mostrarlo.
+        const catalogIndex = new Map(
+          allProducts.map((item) => [item.productType + '-' + item.id, item])
+        );
+        const topSellers = (bestsellersData || [])
+          .map((item) => applyOffer(normalizeProduct(item, item.productType), offersMap))
+          .map((item) => {
+            if (typeof item.price === 'number') return item;
+            const known = catalogIndex.get(item.productType + '-' + item.id);
+            return known ? { ...known, sold: item.sold } : null;
+          })
+          .filter(Boolean);
+        setBestsellers(topSellers);
 
         if (!configData && !topSellers.length && !allProducts.length) {
           setError('No se pudo cargar la tienda. Revisa tu conexión e intenta de nuevo.');
@@ -161,8 +176,6 @@ export function useHome() {
   }, [catalog, category]);
 
   return {
-    announcement: config?.announcementText?.trim() || '',
-    freeShippingFrom: typeof config?.freeShippingMinAmount === 'number' ? config.freeShippingMinAmount : null,
     socialMedia: config?.socialMedia || {},
     // Banners que la web muestra en su portada, por si no hay promociones activas
     heroImages: (config?.heroImages || []).filter((hero) => hero.url),

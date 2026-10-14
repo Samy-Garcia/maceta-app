@@ -3,8 +3,27 @@ import { apiFetch } from '../services/api.js';
 import { computeShippingCost, fetchStoreConfig } from '../services/shipping.js';
 import { useCart } from '../context/CartContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import { typeLabel } from '../utils/productTypes.js';
-import { filterCode, filterName, filterPhoneChars, NAME_REGEX, PHONE_REGEX } from '../utils/validators.js';
+import {
+  EMAIL_REGEX,
+  filterCode,
+  filterDigits,
+  filterName,
+  filterPhoneChars,
+  isExpiryExpired,
+  NAME_REGEX,
+  PHONE_REGEX,
+} from '../utils/validators.js';
+import {
+  normalizeWompiResult,
+  parseExpiry,
+  payWithNewCard,
+  payWithSavedCard,
+  saveWompiCard,
+} from '../services/wompi.js';
+
+const EXPIRY_REGEX = /^(0[1-9]|1[0-2])\/\d{2,4}$/;
 
 // Arma el texto que recibe el backend (shippingAddress es un string)
 const composeAddress = ({ addressLine, municipality, department, reference }) =>
@@ -13,12 +32,14 @@ const composeAddress = ({ addressLine, municipality, department, reference }) =>
     .join(', ');
 
 // Pantalla de pago: datos de quien recibe, dirección escrita a mano (o una
-// guardada, o retiro en tienda), cupón real de tus canjes de lealtad y
-// confirmación del pedido. Sin pasarela de pago: el backend no tiene ninguna,
-// así que "Confirmar pedido" llama directo a POST /api/cart/checkout.
+// guardada, o retiro en tienda), cupón real de tus canjes de lealtad, cobro
+// con Wompi (igual que la web: modo de prueba, sin cobro real) y confirmación
+// del pedido. El pago se procesa PRIMERO; solo si Wompi lo aprueba se llama a
+// POST /api/cart/checkout con el id de esa transacción.
 export function usePayment(navigation) {
   const { cart, checkout } = useCart();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+  const toast = useToast();
 
   const [fullName, setFullName] = useState([user?.name, user?.lastName].filter(Boolean).join(' '));
   const [phone, setPhone] = useState(user?.phone ?? '');
@@ -35,6 +56,19 @@ export function usePayment(navigation) {
   const [selectedPickup, setSelectedPickup] = useState(0);
   const [config, setConfig] = useState(null);
   const [savedVisible, setSavedVisible] = useState(false);
+
+  // Método de pago con Wompi (modo de prueba, igual que la web — no se hace
+  // ningún cobro real). El cliente solo puede tener UNA tarjeta guardada en su
+  // cuenta (la guarda el backend, no el teléfono); si no tiene ninguna, se
+  // arranca directo en el formulario de tarjeta nueva.
+  const savedCard = user?.savedCard || null;
+  const [paymentMode, setPaymentMode] = useState(savedCard ? 'guardada' : 'nueva');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardHolder, setCardHolder] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardEmail, setCardEmail] = useState(user?.email ?? '');
+  const [saveCard, setSaveCard] = useState(true);
 
   const [couponInput, setCouponInput] = useState('');
   const [redemptions, setRedemptions] = useState([]);
@@ -78,6 +112,19 @@ export function usePayment(navigation) {
   const handleCouponChange = (text) => setCouponInput(filterCode(text));
   const handleMunicipalityChange = (text) => setMunicipality(filterName(text));
   const handleDepartmentChange = (text) => setDepartment(filterName(text));
+
+  const handleCardNumberChange = (text) => {
+    const digits = filterDigits(text).slice(0, 16);
+    setCardNumber(digits.replace(/(.{4})/g, '$1 ').trim());
+  };
+  const handleCardHolderChange = (text) => setCardHolder(filterName(text));
+  const handleCardCvvChange = (text) => setCardCvv(filterDigits(text).slice(0, 4));
+  const handleCardExpiryChange = (text) => {
+    const digits = filterDigits(text).slice(0, 4);
+    setCardExpiry(digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits);
+  };
+
+  const cardDigits = cardNumber.replace(/\D/g, '');
 
   const applyCoupon = () => {
     const code = couponInput.trim().toUpperCase();
@@ -150,14 +197,103 @@ export function usePayment(navigation) {
       shippingAddress = composeAddress({ addressLine, municipality, department, reference });
     }
 
+    // Pago con Wompi (modo de prueba): si se eligió tarjeta nueva hay que
+    // validar sus datos antes de cobrar; con la guardada no hace falta nada
+    // más, el backend ya tiene su token.
+    if (paymentMode === 'nueva') {
+      if (!cardHolder.trim() || !cardExpiry.trim() || !cardCvv.trim() || !cardEmail.trim() || cardDigits.length !== 16) {
+        setError('Completa los datos de la tarjeta o elige la guardada.');
+        return;
+      }
+      if (!NAME_REGEX.test(cardHolder.trim())) {
+        setError('El nombre del titular de la tarjeta solo debe contener letras.');
+        return;
+      }
+      if (!EXPIRY_REGEX.test(cardExpiry.trim())) {
+        setError('La fecha de vencimiento de la tarjeta debe tener el formato MM/AA.');
+        return;
+      }
+      if (isExpiryExpired(cardExpiry)) {
+        setError('La tarjeta ingresada ya está vencida.');
+        return;
+      }
+      if (!/^\d{3,4}$/.test(cardCvv)) {
+        setError('Ingresa un CVV válido.');
+        return;
+      }
+      if (!EMAIL_REGEX.test(cardEmail.trim())) {
+        setError('Ingresa un correo válido para el pago.');
+        return;
+      }
+    }
+
+    const confirmedDialog = await toast.confirm({
+      title: '¿Confirmar compra?',
+      message: `Se procesará un pago de prueba por $${total.toFixed(2)}. No se realizará ningún cobro real a tu tarjeta.`,
+      confirmLabel: 'Sí, pagar y confirmar',
+      icon: 'card-outline',
+    });
+    if (!confirmedDialog) return;
+
     setPaying(true);
     try {
-      const confirmed = await checkout(
+      const nombreCliente =
+        paymentMode === 'nueva' ? cardHolder.trim() : [user?.name, user?.lastName].filter(Boolean).join(' ');
+      const emailCliente = paymentMode === 'nueva' ? cardEmail.trim() : user?.email;
+
+      let payment;
+      if (paymentMode === 'guardada') {
+        payment = await payWithSavedCard({ monto: total, emailCliente, nombreCliente });
+      } else {
+        const { mesVencimiento, anioVencimiento } = parseExpiry(cardExpiry);
+        payment = await payWithNewCard({
+          numeroTarjeta: cardDigits,
+          cvv: cardCvv,
+          mesVencimiento,
+          anioVencimiento,
+          nombreEnTarjeta: cardHolder.trim(),
+          monto: total,
+          emailCliente,
+          nombreCliente,
+        });
+      }
+
+      const { approved, transactionId, message } = normalizeWompiResult(payment);
+      if (!approved) {
+        setError(message || 'La transacción de prueba fue rechazada.');
+        setPaying(false);
+        return;
+      }
+      toast.success('Pago de prueba aprobado', 'Transacción ' + transactionId);
+
+      // Guardar la tarjeta nueva no debe tumbar la compra si falla: el pago ya
+      // se aprobó, lo único que podría fallar es quedarse sin guardarla para
+      // la próxima vez.
+      if (paymentMode === 'nueva' && saveCard) {
+        try {
+          const { mesVencimiento, anioVencimiento } = parseExpiry(cardExpiry);
+          await saveWompiCard({
+            numeroTarjeta: cardDigits,
+            cvv: cardCvv,
+            mesVencimiento,
+            anioVencimiento,
+            nombreEnTarjeta: cardHolder.trim(),
+          });
+          await refreshUser();
+        } catch (saveErr) {
+          console.warn('[checkout] no se pudo guardar la tarjeta', saveErr?.message);
+        }
+      }
+
+      const confirmed = await checkout({
         shippingAddress,
-        phone.trim(),
-        appliedCoupon ? couponInput.trim() : undefined,
-        shippingCost
-      );
+        contactPhone: phone.trim(),
+        couponCode: appliedCoupon ? couponInput.trim() : undefined,
+        shippingCost,
+        deliveryMethod: isPickup ? 'pickup' : 'shipping',
+        pickupLocationId: isPickup ? pickup?._id : undefined,
+        wompiTransaccionId: transactionId,
+      });
       navigation.navigate('OrderConfirmed', {
         order: confirmed,
         breakdown: { subtotal, discount, shippingCost, total },
@@ -173,7 +309,7 @@ export function usePayment(navigation) {
       setError(
         fromServer
           ? 'El servidor rechazó el pedido (' + err.status + '): ' + err.message
-          : err.message || 'No se pudo confirmar tu pedido.'
+          : err.message || 'No se pudo procesar el pago o confirmar tu pedido.'
       );
     } finally {
       setPaying(false);
@@ -204,6 +340,21 @@ export function usePayment(navigation) {
     selectedPickup,
     setSelectedPickup,
     savedAddresses,
+    savedCard,
+    paymentMode,
+    setPaymentMode,
+    cardNumber,
+    setCardNumber: handleCardNumberChange,
+    cardHolder,
+    setCardHolder: handleCardHolderChange,
+    cardExpiry,
+    setCardExpiry: handleCardExpiryChange,
+    cardCvv,
+    setCardCvv: handleCardCvvChange,
+    cardEmail,
+    setCardEmail,
+    saveCard,
+    setSaveCard,
     savedVisible,
     setSavedVisible,
     useSavedAddress,

@@ -1,18 +1,17 @@
 import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../theme/ThemeContext.jsx';
 import { backdropFor } from '../theme/gradients.js';
 import { useBackdropStatusBar } from '../hooks/useBackdropStatusBar.jsx';
 
 // Fondo de las pantallas de autenticación: el mismo degradado verde suave
-// de la pantalla de bienvenida.
+// de la pantalla de bienvenida. Siempre el claro: el flujo de autenticación
+// no sigue el modo oscuro que elija el usuario en el resto de la app.
 export default function ScreenBackground({ children }) {
-  const { isDark } = useTheme();
   useBackdropStatusBar();
 
   return (
-    <LinearGradient colors={backdropFor(isDark)} style={styles.background}>
+    <LinearGradient colors={backdropFor(false)} style={styles.background}>
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           style={styles.flex}

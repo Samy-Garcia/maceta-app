@@ -19,7 +19,7 @@ import { useTheme } from '../theme/ThemeContext.jsx';
 import { SERIF } from '../theme/typography.js';
 import { useProducts } from '../hooks/useProducts.jsx';
 import { useStoreConfig } from '../hooks/useStoreConfig.jsx';
-import { TYPE_LABEL } from '../utils/productTypes.js';
+import { TYPE_LABEL, productRoute } from '../utils/productTypes.js';
 import { favoriteKey } from '../hooks/useProductActions.jsx';
 import { isRecentlyAdded } from '../utils/normalizeProduct.js';
 
@@ -83,7 +83,7 @@ export default function ProductsScreen({ navigation, route }) {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {collections.length > 0 ? (
           <>
-            <Text style={styles.sectionTitle}>Colecciones del Atelier</Text>
+            <Text style={styles.sectionTitle}>Colecciones Macetas503</Text>
             <Text style={styles.sectionSub}>Curadas por maestros ceramistas</Text>
 
             <View style={styles.collections}>
@@ -182,7 +182,10 @@ export default function ProductsScreen({ navigation, route }) {
               badge={badgeOf(item)}
               specs={item.description || item.dimensions}
               isFavorite={favoriteIds.has(favoriteKey(item.productType, item.id))}
-              onPress={() => navigation.navigate('ProductDetail', { product: item })}
+              onPress={() => {
+                const { name, params } = productRoute(item);
+                navigation.navigate(name, params);
+              }}
               onToggleFavorite={() => toggleFavorite(item)}
               onAdd={() => addToCart(item)}
             />

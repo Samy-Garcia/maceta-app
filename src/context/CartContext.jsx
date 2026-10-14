@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { apiFetch } from '../services/api.js';
+import { addCustomOrderToCart as addCustomOrderToCartApi } from '../services/customOrders.js';
 import { useAuth } from './AuthContext.jsx';
 
 const CartContext = createContext(null);
@@ -42,6 +43,13 @@ export function CartProvider({ children }) {
     setCart(data);
   }, []);
 
+  // Agregar una personalización ya aceptada (con precio) al carrito, igual
+  // que un producto normal, pero por su id de solicitud en vez de productId.
+  const addCustomOrderToCart = useCallback(async (customOrderId, quantity = 1) => {
+    const data = await addCustomOrderToCartApi(customOrderId, quantity);
+    setCart(data);
+  }, []);
+
   const updateQuantity = useCallback(async (itemId, quantity) => {
     const data = await apiFetch(`/api/cart/item/${itemId}`, {
       method: 'PUT',
@@ -59,8 +67,20 @@ export function CartProvider({ children }) {
   // pedido (si falta responde "Debes marcar tu ubicación en el mapa para
   // calcular el envío"). Es el mismo campo que manda la tienda web, solo que
   // aquí el monto sale de la tarifa configurada y no de un mapa.
+  //
+  // wompiTransaccionId también es obligatorio desde que el checkout de la web
+  // cobra con Wompi (modo de prueba) antes de confirmar el pedido: el pago se
+  // hace primero y recién con la transacción aprobada se llama esto.
   const checkout = useCallback(
-    async (shippingAddress, contactPhone, couponCode, shippingCost = 0) => {
+    async ({
+      shippingAddress,
+      contactPhone,
+      couponCode,
+      shippingCost = 0,
+      deliveryMethod = 'shipping',
+      pickupLocationId,
+      wompiTransaccionId,
+    }) => {
       const confirmed = await apiFetch('/api/cart/checkout', {
         method: 'POST',
         body: JSON.stringify({
@@ -68,6 +88,9 @@ export function CartProvider({ children }) {
           contactPhone,
           couponCode: couponCode || undefined,
           shippingCost: Number(shippingCost) || 0,
+          deliveryMethod,
+          pickupLocationId: pickupLocationId || undefined,
+          wompiTransaccionId,
         }),
       });
       await refreshCart(); // el carrito activo confirmado pasa a "Pendiente"; esto trae uno nuevo vacío
@@ -81,7 +104,7 @@ export function CartProvider({ children }) {
   return (
     <CartContext.Provider
       value={{
-        cart, itemCount, loading, refreshCart, addToCart, updateQuantity, removeItem, checkout,
+        cart, itemCount, loading, refreshCart, addToCart, addCustomOrderToCart, updateQuantity, removeItem, checkout,
       }}
     >
       {children}

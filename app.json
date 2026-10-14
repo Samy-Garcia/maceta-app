@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "macetas-app",
+    "name": "Macetas503",
     "slug": "macetas-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,7 +13,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.lissy190816.macetasapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,12 +35,17 @@
         {
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#F4F9F5"
         }
       ],
       "expo-web-browser",
       "@react-native-community/datetimepicker"
     ],
-    "scheme": "macetas503"
+    "scheme": "macetas503",
+    "extra": {
+      "eas": {
+        "projectId": "03071763-840c-4168-af0d-bfcb8187a682"
+      }
+    }
   }
 }

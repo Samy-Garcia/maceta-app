@@ -1,10 +1,12 @@
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
-import { useTheme } from '../theme/ThemeContext.jsx';
+import { lightColors } from '../theme/palettes.js';
 
-// Botón de Iniciar sesión con Google
+// Botón de Iniciar sesión con Google.
+// Fija colores claros: el flujo de autenticación no sigue el modo oscuro.
 export default function GoogleButton({ onPress, label = 'Inicia sesión con Google', loading = false }) {
-  const { colors, isDark } = useTheme();
+  const colors = lightColors;
+  const isDark = false;
   const styles = createStyles(colors, isDark);
 
   return (

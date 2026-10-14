@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { apiFetch } from '../services/api.js';
 import { fetchMyLoyalty } from '../services/loyalty.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -66,6 +67,23 @@ export function useEditProfile(navigation) {
     setError('');
   };
 
+  // La cámara de hoy entrega fotos de 12 MP o más. El recorte nativo
+  // (allowsEditing) tenía que decodificar esa imagen completa en memoria para
+  // mostrar el editor, y en equipos con poca RAM eso hacía que Android matara
+  // el proceso de la app para liberar memoria — el usuario lo veía como un
+  // reinicio. Se quita el recorte nativo y en su lugar la imagen se reduce
+  // aquí mismo a un tamaño manejable antes de guardarla: el Avatar ya la
+  // recorta en círculo con resizeMode="cover", así que no hace falta que
+  // venga cuadrada.
+  const shrinkPhoto = async (asset) => {
+    const result = await manipulateAsync(asset.uri, [{ resize: { width: 1024 } }], {
+      compress: 0.7,
+      format: SaveFormat.JPEG,
+    });
+    setPhotoUri(result.uri);
+    setPhotoAsset({ ...asset, uri: result.uri, mimeType: 'image/jpeg' });
+  };
+
   const pickFromCamera = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
@@ -74,13 +92,14 @@ export function useEditProfile(navigation) {
     }
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
       quality: 0.7,
     });
     if (!result.canceled) {
-      setPhotoUri(result.assets[0].uri);
-      setPhotoAsset(result.assets[0]);
+      try {
+        await shrinkPhoto(result.assets[0]);
+      } catch {
+        toast.error('No se pudo procesar la foto', 'Intenta con otra foto.');
+      }
     }
   };
 
@@ -92,13 +111,14 @@ export function useEditProfile(navigation) {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
       quality: 0.7,
     });
     if (!result.canceled) {
-      setPhotoUri(result.assets[0].uri);
-      setPhotoAsset(result.assets[0]);
+      try {
+        await shrinkPhoto(result.assets[0]);
+      } catch {
+        toast.error('No se pudo procesar la foto', 'Intenta con otra foto.');
+      }
     }
   };
 
