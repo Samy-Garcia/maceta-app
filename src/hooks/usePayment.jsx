@@ -236,12 +236,16 @@ export function usePayment(navigation) {
     if (!confirmedDialog) return;
 
     setPaying(true);
-    try {
-      const nombreCliente =
-        paymentMode === 'nueva' ? cardHolder.trim() : [user?.name, user?.lastName].filter(Boolean).join(' ');
-      const emailCliente = paymentMode === 'nueva' ? cardEmail.trim() : user?.email;
 
-      let payment;
+    // El pago y la confirmación del pedido son dos llamadas al servidor
+    // completamente distintas (Wompi, y luego /api/cart/checkout). Si algo
+    // falla, el mensaje dice cuál de las dos fue para no tener que adivinar.
+    const nombreCliente =
+      paymentMode === 'nueva' ? cardHolder.trim() : [user?.name, user?.lastName].filter(Boolean).join(' ');
+    const emailCliente = paymentMode === 'nueva' ? cardEmail.trim() : user?.email;
+
+    let payment;
+    try {
       if (paymentMode === 'guardada') {
         payment = await payWithSavedCard({ monto: total, emailCliente, nombreCliente });
       } else {
@@ -257,34 +261,46 @@ export function usePayment(navigation) {
           nombreCliente,
         });
       }
+    } catch (err) {
+      const fromServer = err?.status > 0;
+      console.warn('[checkout] pago con Wompi rechazado', err?.status, err?.message);
+      setError(
+        fromServer
+          ? 'Wompi rechazó el pago (' + err.status + '): ' + err.message
+          : err.message || 'No se pudo procesar el pago de prueba.'
+      );
+      setPaying(false);
+      return;
+    }
 
-      const { approved, transactionId, message } = normalizeWompiResult(payment);
-      if (!approved) {
-        setError(message || 'La transacción de prueba fue rechazada.');
-        setPaying(false);
-        return;
+    const { approved, transactionId, message } = normalizeWompiResult(payment);
+    if (!approved) {
+      setError(message || 'La transacción de prueba fue rechazada.');
+      setPaying(false);
+      return;
+    }
+    toast.success('Pago de prueba aprobado', 'Transacción ' + transactionId);
+
+    // Guardar la tarjeta nueva no debe tumbar la compra si falla: el pago ya
+    // se aprobó, lo único que podría fallar es quedarse sin guardarla para
+    // la próxima vez.
+    if (paymentMode === 'nueva' && saveCard) {
+      try {
+        const { mesVencimiento, anioVencimiento } = parseExpiry(cardExpiry);
+        await saveWompiCard({
+          numeroTarjeta: cardDigits,
+          cvv: cardCvv,
+          mesVencimiento,
+          anioVencimiento,
+          nombreEnTarjeta: cardHolder.trim(),
+        });
+        await refreshUser();
+      } catch (saveErr) {
+        console.warn('[checkout] no se pudo guardar la tarjeta', saveErr?.message);
       }
-      toast.success('Pago de prueba aprobado', 'Transacción ' + transactionId);
+    }
 
-      // Guardar la tarjeta nueva no debe tumbar la compra si falla: el pago ya
-      // se aprobó, lo único que podría fallar es quedarse sin guardarla para
-      // la próxima vez.
-      if (paymentMode === 'nueva' && saveCard) {
-        try {
-          const { mesVencimiento, anioVencimiento } = parseExpiry(cardExpiry);
-          await saveWompiCard({
-            numeroTarjeta: cardDigits,
-            cvv: cardCvv,
-            mesVencimiento,
-            anioVencimiento,
-            nombreEnTarjeta: cardHolder.trim(),
-          });
-          await refreshUser();
-        } catch (saveErr) {
-          console.warn('[checkout] no se pudo guardar la tarjeta', saveErr?.message);
-        }
-      }
-
+    try {
       const confirmed = await checkout({
         shippingAddress,
         contactPhone: phone.trim(),
@@ -301,15 +317,21 @@ export function usePayment(navigation) {
         isPickup,
       });
     } catch (err) {
-      // Se marca de dónde viene el mensaje: la app ya no pide ubicación en
-      // ningún lado, así que cualquier queja sobre eso sale del servidor y
-      // hay que arreglarla allá, no aquí.
+      // El pago con Wompi ya se aprobó en este punto (transactionId existe):
+      // si falla justo esto, quedó cobrado sin pedido creado — hay que avisar
+      // distinto a si nunca se llegó a cobrar.
       const fromServer = err?.status > 0;
-      console.warn('[checkout] rechazado', err?.status, err?.message, { shippingAddress });
+      console.warn('[checkout] pedido rechazado tras pago aprobado', err?.status, err?.message, {
+        shippingAddress,
+        transactionId,
+      });
       setError(
-        fromServer
+        (fromServer
           ? 'El servidor rechazó el pedido (' + err.status + '): ' + err.message
-          : err.message || 'No se pudo procesar el pago o confirmar tu pedido.'
+          : err.message || 'No se pudo confirmar tu pedido.') +
+          ' Tu pago de prueba (transacción ' +
+          transactionId +
+          ') ya quedó aprobado.'
       );
     } finally {
       setPaying(false);
